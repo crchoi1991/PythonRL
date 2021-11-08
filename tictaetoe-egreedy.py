@@ -1,4 +1,4 @@
-# Tic-Tae-Toe Random Game
+# Tic-Tae-Toe e-greedy Game
 # Random module import
 import random
 
@@ -77,8 +77,24 @@ class TicTaeToe:
             state = state*3 + k
         return state
 
+    # p에다 놓았을 경우 다음 상태를 반환
+    def GetNextState(self, turn, p):
+        nb = [k for k in self.board]
+        nb[p] = turn
+        state = 0
+        for k in nb:
+            state = state*3 + k
+        return state
+
 # 모든 상태에 대해서 기대값을 기록할 상태공간 생성
-ss = [ 0.0 ]*(3**9)
+import os.path
+if os.path.isfile("ttt-eg.sav"):
+    with open("ttt-eg.sav", "r") as f:
+        epsilon = float(f.readline())
+        ss = list(map(float, f.readline().split()))
+else:
+    ss = [ 0.0 ]*(3**9)
+    epsilon = 0.95      # epsilon of e-greedy
 lr = 0.1            # learning rate (lambda)
 #  무한하게 게임 진행
 while True:
@@ -94,7 +110,20 @@ while True:
         for i in range(9):
             if game.board[i] == 0: cand.append(i)
         if turn == game.aiTurn:
-            p = random.choice(cand)
+            # 엡실론 값 확률로 랜덤 선택
+            # 그 외에는 다음 상태값이 가장 큰 것을 선택
+            if random.uniform(0.0, 1.0) < epsilon:
+                p = random.choice(cand)
+            else:
+                p, maxv = 0, -100.0
+                mt = (1 if game.aiTurn == 1 else -1)
+                board = [k for k in game.board]
+                # 둘 수 있는 후보들에 대해서
+                for c in cand:
+                    ns = game.GetNextState(turn, c)
+                    board[c] = ss[ns]*mt
+                    if maxv < ss[ns]*mt: p, maxv = c, ss[ns]*mt
+                print(*board)
             game.Put(turn, p)
         else:
             while True:
@@ -115,9 +144,11 @@ while True:
     # 모든 에피소드에 대해서
     for e in ep:
         ss[e] += lr * (reward - ss[e])
-        reward *= -1
+    # 엡실론 값을 업데이트
+    epsilon *= 0.95
     yn = input("Do you want more game : ")
     if yn != 'y' and yn != 'Y': break
 
-for i in range(0, 3**9, 9):
-    print(ss[i:i+9])
+with open("ttt-eg.sav", "w") as f:
+    f.write("%s\n"%epsilon)
+    f.write(" ".join(map(str, ss)))

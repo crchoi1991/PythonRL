@@ -1,4 +1,4 @@
-# Tic-Tae-Toe Random Game
+# Tic-Tae-Toe Temporal Difference Game
 # Random module import
 import random
 
@@ -77,8 +77,22 @@ class TicTaeToe:
             state = state*3 + k
         return state
 
+    # p에다 놓았을 경우 다음 상태를 반환
+    def GetNextState(self, turn, p):
+        nb = [k for k in self.board]
+        nb[p] = turn
+        state = 0
+        for k in nb:
+            state = state*3 + k
+        return state
+
 # 모든 상태에 대해서 기대값을 기록할 상태공간 생성
-ss = [ 0.0 ]*(3**9)
+import os.path
+if os.path.isfile("ttt-td.sav"):
+    with open("ttt-td.sav", "r") as f:
+        ss = list(map(float, f.readline().split()))
+else:
+    ss = [ 0.0 ]*(3**9)
 lr = 0.1            # learning rate (lambda)
 #  무한하게 게임 진행
 while True:
@@ -94,7 +108,15 @@ while True:
         for i in range(9):
             if game.board[i] == 0: cand.append(i)
         if turn == game.aiTurn:
-            p = random.choice(cand)
+            p, maxv = 0, -100.0
+            mt = (1 if game.aiTurn == 1 else -1)
+            board = [k for k in game.board]
+            # 둘 수 있는 후보들에 대해서
+            for c in cand:
+                ns = game.GetNextState(turn, c)
+                board[c] = ss[ns]*mt
+                if maxv < ss[ns]*mt: p, maxv = c, ss[ns]*mt
+            print(*board)
             game.Put(turn, p)
         else:
             while True:
@@ -115,9 +137,8 @@ while True:
     # 모든 에피소드에 대해서
     for e in ep:
         ss[e] += lr * (reward - ss[e])
-        reward *= -1
     yn = input("Do you want more game : ")
     if yn != 'y' and yn != 'Y': break
 
-for i in range(0, 3**9, 9):
-    print(ss[i:i+9])
+with open("ttt-td.sav", "w") as f:
+    f.write(" ".join(map(str, ss)))

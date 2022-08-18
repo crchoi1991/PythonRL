@@ -59,7 +59,20 @@ class Game:
         ref = (0.0, (self.turn==1)*2-1.0, (self.turn==2)*2-1.0, 0.0)
         st = np.array([ref[int(buf[i])] for i in range(64)])
         return True, st
+        
+    def action(self, board):
+        # hints : 이번턴에서 놓을 수 있는 자리
+        hints = [i for i in range(64) if board[i] == "0"]
+        # ref는 현재 인공지능이 흰돌이든 검은돌이든 모두 자기턴이
+        # 흰돌인 것으로 변환하도록 하는 참조
+        ref = (0.0, (self.turn==2)*2-1.0, (self.turn==1)*2-1.0, 0.0)
+        st = np.array([ref[int(board[i])] for i in range(64)])
 
+        # 놓을 수 있는 자리 중 하나를 무작위로 선택합니다.
+        p = random.choice(hints)
+        _, nst = self.preRun(p)
+        return st, nst, p
+        
     def onStart(self, buf):
         self.turn = int(buf)
         self.episode = []
@@ -85,19 +98,6 @@ class Game:
         print("(%d, %d)"%(p/8, p%8), end="")
         return True
 
-    def action(self, board):
-        # hints : 이번턴에서 놓을 수 있는 자리
-        hints = [i for i in range(64) if board[i] == "0"]
-        # ref는 현재 인공지능이 흰돌이든 검은돌이든 모두 자기턴이
-        # 흰돌인 것으로 변환하도록 하는 참조
-        ref = (0.0, (self.turn==2)*2-1.0, (self.turn==1)*2-1.0, 0.0)
-        st = np.array([ref[int(board[i])] for i in range(64)])
-
-        # 놓을 수 있는 자리 중 하나를 무작위로 선택합니다.
-        p = random.choice(hints)
-        _, nst = self.preRun(p)
-        return st, nst, p
-        
 quitFlag = False
 winlose = [0, 0, 0]
 game = Game()

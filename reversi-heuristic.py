@@ -105,7 +105,7 @@ class Game:
             if not ret: return None, None, -1
             v = self.model.predict(nst.reshape(1, 64))[0, 0]
             if v > maxv: maxp, maxnst, maxv = h, nst, v
-        return st, nst, maxp
+        return st, maxnst, maxp
 
     # 인공신경망 모델을 생성합니다.
     def buildModel(self):

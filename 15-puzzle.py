@@ -5,8 +5,11 @@ import pygame
 from pygame.locals import *
 
 Margin = 10
-FPS = 20
+FPS = 30
 Actions = { 'Left':(0, -1), 'Right':(0, 1), 'Up':(-1, 0), 'Down':(1, 0) }
+Width = 600
+Height = 400
+Delay = FPS//15
 
 # puzzle class
 class Puzzle:
@@ -16,7 +19,7 @@ class Puzzle:
         self.m = m
 
         # 셀의 크기를 결정하도록 합니다.
-        self.size = min(800//m, 600//n)
+        self.size = min(Width//m, Height//n)
 
         # 퍼즐을 초기화합니다.
         puzzle = [ [ r*m+c+1 for c in range(m) ] for r in range(n) ]
@@ -142,7 +145,7 @@ class Puzzle:
             rect = text.get_rect()
             rect.center = (x+self.size//2, y+self.size//2)
             display.blit(text, rect)
-            if self.alpha < 0.95: self.alpha += 0.1
+            if self.alpha < 0.95: self.alpha += 0.2
         # 디스플레이를 업데이를 합니다.
         pygame.display.update()
         # FPS에 맞게 잠을 잡니다.
@@ -161,13 +164,13 @@ with open("15-puzzle.dat", "r") as f:
 		if not line: break
 		dt = line.split()
 		ss[dt[0]] = float(dt[1])
-learning = 0.2
-quitFlag = 0
-while quitFlag != -1:
+learning = 0.5
+isQuit = False
+while not isQuit:
     puzzle = Puzzle(4, 4)
     while True:
         if puzzle.update() == False:
-            quitFlag = -1
+            isQuit = True
             break
         status = puzzle.getStatus(puzzle.board)
         if status not in ss: ss[status] = puzzle.getMaxValue(puzzle.board)
@@ -179,9 +182,9 @@ while quitFlag != -1:
             if maxv < v: a, maxv = k, v
         ss[status] += learning*(-1+maxv-ss[status])
         if puzzle.action(a) == 0: break
-        for _ in range(FPS//2): puzzle.draw()
-    for _ in range(FPS*3):
-        puzzle.draw()
+        for _ in range(Delay): puzzle.draw()
+    for _ in range(FPS*3): puzzle.draw()
+    print("solved")
     puzzle.shutdown()
 
 with open("15-puzzle.dat", "w") as f:

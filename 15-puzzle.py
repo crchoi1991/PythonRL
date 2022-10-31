@@ -6,6 +6,7 @@ from pygame.locals import *
 
 Margin = 10
 FPS = 20
+Actions = { 'Left':(0, -1), 'Right':(0, 1), 'Up':(-1, 0), 'Down':(1, 0) }
 
 # puzzle class
 class Puzzle:
@@ -37,7 +38,7 @@ class Puzzle:
 
         # 비어있는 칸의 숫자 넣기
         puzzle[self.emptyr][self.emptyc] = 0
-        self.puzzle = puzzle
+        self.board = puzzle
 
         # pygame을 초기화합니다.
         pygame.init()
@@ -54,43 +55,45 @@ class Puzzle:
         self.alpha = 1.0
 
     # 퍼즐이 다 맞았는지 검사합니다.
-    def checkPuzzle(self):
+    def check(self):
         for r in range(self.n):
             for c in range(self.m):
                 if (r != self.n-1 or c != self.m-1) and \
-                   self.puzzle[r][c] != r*self.m+c+1: return 1
+                   self.board[r][c] != r*self.m+c+1: return 1
         return 0
     
-    # 퍼즐의 셀이 클릭된 경우 처리합니다.
-    def onClick(self, r, c):
-        drc = ((0, 1), (1, 0), (0, -1), (-1, 0))
-        er, ec = self.emptyr, self.emptyc
-        puzzle = self.puzzle
-        for dr, dc in drc:
-            if r == er+dr and c == ec+dc:
-                puzzle[er][ec] = puzzle[r][c]
-                puzzle[r][c] = 0
-                self.last = (self.emptyr, self.emptyc)
-                self.emptyr, self.emptyc = r, c
-                self.alpha = 0.0
-                return self.checkPuzzle()
-        return -1
+    def action(self, a):
+        d = Actions[a]
+        nr, nc = (self.emptyr+d[0], self.emptyc+d[1])
+        self.board[self.emptyr][self.emptyc] = self.board[nr][nc]
+        self.board[nr][nc] = 0
+        self.last = (self.emptyr, self.emptyc)
+        self.emptyr, self.emptyc = nr, nc
+        self.alpha = 0.0
+        return self.check()
 
-    # 루프를 돌도록 합니다.  False 반환시 종료
+    def preAction(self, a):
+        d = Actions[a]
+        nr, nc = (self.emptyr+d[0], self.emptyc+d[1])
+        if nr < 0 or nr >= self.n or nc < 0 or nc >= self.m: return None
+        board=[[self.board[r][c] for c in range(self.m)] for r in range(self.n)]
+        board[self.emptyr][self.emptyc] = board[nr][nc]
+        board[nr][nc] = 0
+        return self.getStatus(board)
+
+    def getStatus(self, board):
+        s = ""
+        for r in range(self.n):
+            for c in range(self.m):
+                if board[r][c] >= 10: s += chr(ord('a')+board[r][c]-10)
+                else: s += str(board[r][c])
+        return s
+
     def update(self):
         # 이벤트를 처리합니다.
         for e in pygame.event.get():
             if e.type == QUIT or (e.type == KEYUP and e.key == K_ESCAPE):
                 return False
-            # 마우스 입력이 들어온 경우 처리
-            if e.type == MOUSEBUTTONUP:
-                r, c = (e.pos[1]-Margin)//self.size, (e.pos[0]-Margin)//self.size
-                # 영역밖 클릭한 경우 무시
-                if r < 0 or r >= self.n or c < 0 or c >= self.m: continue
-                # onClick 실행
-                # return : 0 : 종료, 1 : 지속, -1 : 잘못 누른경우
-                ret = self.onClick(r, c)
-                if ret != -1: return bool(ret)
         return True
 
     # 그림을 그립니다.
@@ -100,7 +103,7 @@ class Puzzle:
         display.fill( (255, 255, 255) )
 
         # 슬라이딩 퍼즐 그림을 그립니다.
-        puzzle = self.puzzle
+        puzzle = self.board
         for r in range(self.n):
             for c in range(self.m):
                 # 박스 그리기
@@ -140,15 +143,36 @@ class Puzzle:
     def shutdown(self):
         pygame.quit()
         
-ss = dict()
-while True:
-	puzzle = Puzzle(4, 4)
+ss = { '123456789abcdef0':0.0 }
+with open("15-puzzle.dat", "r") as f:
+	while True:
+		line = f.readline()
+		if not line: break
+		dt = line.split()
+		ss[dt[0]] = float(dt[1])
+learning = 0.1
+quitFlag = 0
+while quitFlag != -1:
+    puzzle = Puzzle(4, 4)
+    while True:
+        if puzzle.update() == False:
+            quitFlag = -1
+            break
+        status = puzzle.getStatus(puzzle.board)
+        if status not in ss: ss[status] = -1.0
+        a, maxv = '', -1000000
+        for k in Actions:
+            ps = puzzle.preAction(k)
+            if ps == None: continue
+            v = ss[ps] if ps in ss else -1.0
+            if maxv < v: a, maxv = k, v
+        ss[status] += learning*(-1+maxv-ss[status])
+        if puzzle.action(a) == 0: break
+        for _ in range(FPS//2): puzzle.draw()
+    for _ in range(FPS*3):
+        puzzle.draw()
+    puzzle.shutdown()
 
-	quitFlag = -1
-	while quitFlag < FPS*3:
-		if quitFlag == -1 and puzzle.update() == False: quitFlag = 0
-		puzzle.draw()
-		if quitFlag != -1: quitFlag += 1
-	puzzle.shutdown()
-
-
+with open("15-puzzle.dat", "w") as f:
+	for k in ss:
+		f.write("%s %s\n"%(k, ss[k]))

@@ -75,11 +75,11 @@ class Puzzle:
     def preAction(self, a):
         d = Actions[a]
         nr, nc = (self.emptyr+d[0], self.emptyc+d[1])
-        if nr < 0 or nr >= self.n or nc < 0 or nc >= self.m: return None
+        if nr < 0 or nr >= self.n or nc < 0 or nc >= self.m: return None, 0.0
         board=[[self.board[r][c] for c in range(self.m)] for r in range(self.n)]
         board[self.emptyr][self.emptyc] = board[nr][nc]
         board[nr][nc] = 0
-        return self.getStatus(board)
+        return self.getStatus(board), self.getMaxValue(board)
 
     def getStatus(self, board):
         s = ""
@@ -95,6 +95,17 @@ class Puzzle:
             if e.type == QUIT or (e.type == KEYUP and e.key == K_ESCAPE):
                 return False
         return True
+
+    def getMaxValue(self, board):
+        v = 0.0
+        for r in range(self.n):
+            for c in range(self.m):
+                if board[r][c] != r*self.m+c+1:
+                    if board[r][c] == 0: continue
+                    x = board[r][c]-1
+                    er, ec = x//3, x%3
+                    v -= abs(r-er) + abs(c-ec)
+        return v
 
     # 그림을 그립니다.
     def draw(self):
@@ -150,7 +161,7 @@ with open("15-puzzle.dat", "r") as f:
 		if not line: break
 		dt = line.split()
 		ss[dt[0]] = float(dt[1])
-learning = 0.1
+learning = 0.2
 quitFlag = 0
 while quitFlag != -1:
     puzzle = Puzzle(4, 4)
@@ -159,12 +170,12 @@ while quitFlag != -1:
             quitFlag = -1
             break
         status = puzzle.getStatus(puzzle.board)
-        if status not in ss: ss[status] = -1.0
+        if status not in ss: ss[status] = puzzle.getMaxValue(puzzle.board)
         a, maxv = '', -1000000
         for k in Actions:
-            ps = puzzle.preAction(k)
+            ps, mv = puzzle.preAction(k)
             if ps == None: continue
-            v = ss[ps] if ps in ss else -1.0
+            v = ss[ps] if ps in ss else mv
             if maxv < v: a, maxv = k, v
         ss[status] += learning*(-1+maxv-ss[status])
         if puzzle.action(a) == 0: break

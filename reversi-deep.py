@@ -33,7 +33,7 @@ class Game:
         while True:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
-                self.sock.connect(("127.0.0.1", 8791))
+                self.sock.connect(("172.30.1.10", 8791))
             except socket.error:
                 print(f"Socket.error : {socket.error.errno}")
                 return False

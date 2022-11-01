@@ -1,3 +1,4 @@
 *.sav
 deep
 shallow
+__pycache__

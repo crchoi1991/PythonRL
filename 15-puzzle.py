@@ -10,6 +10,7 @@ Actions = { 'Left':(0, -1), 'Right':(0, 1), 'Up':(-1, 0), 'Down':(1, 0) }
 Width = 600
 Height = 400
 Delay = FPS//15
+ShuffleCount = 30
 
 # puzzle class
 class Puzzle:
@@ -27,8 +28,8 @@ class Puzzle:
         # 비어있는 곳의 위치 설정
         self.emptyr, self.emptyc = n-1, m-1
 
-        # n*m*100번에 걸쳐서 섞어놓기
-        for _ in range(n*m*100):
+		# shuffle
+        for _ in range(ShuffleCount):
             v = random.randrange(4)
             r, c = self.emptyr, self.emptyc
             drc = ( (0, 1), (1, 0), (0, -1), (-1, 0) )

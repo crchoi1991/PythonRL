@@ -10,7 +10,7 @@ Actions = { 'Left':(0, -1), 'Right':(0, 1), 'Up':(-1, 0), 'Down':(1, 0) }
 Width = 600
 Height = 400
 Delay = FPS//15
-ShuffleCount = 15
+ShuffleCount = 30
 
 # puzzle class
 class Puzzle:
@@ -173,7 +173,7 @@ isQuit = False
 while not isQuit:
     puzzle = Puzzle(4, 4)
     moveCount = 0
-    while True:
+    while moveCount < 500:
         if puzzle.update() == False:
             isQuit = True
             break

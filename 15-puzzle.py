@@ -10,7 +10,7 @@ Actions = { 'Left':(0, -1), 'Right':(0, 1), 'Up':(-1, 0), 'Down':(1, 0) }
 Width = 600
 Height = 400
 Delay = FPS//15
-ShuffleCount = 30
+ShuffleCount = 60
 
 # puzzle class
 class Puzzle:
@@ -169,11 +169,12 @@ with open("15-puzzle.dat", "r") as f:
 ss['123456789abcdef0'] = 0.0
 learning = 0.5
 solvedCount = 0
+puzzleCount = 0
 isQuit = False
 while not isQuit:
     puzzle = Puzzle(4, 4)
     moveCount = 0
-    while moveCount < 500:
+    while moveCount <= ShuffleCount:
         if puzzle.update() == False:
             isQuit = True
             break
@@ -190,8 +191,10 @@ while not isQuit:
         if puzzle.action(a) == 0: break
         for _ in range(Delay): puzzle.draw()
     if not isQuit:
-        solvedCount += 1
-        print(f"solved {solvedCount} : {moveCount} moves")
+        puzzleCount += 1
+        solvedCount += 1 if moveCount <= ShuffleCount else 0
+        solveRate = solvedCount*100/puzzleCount
+        print(f"{solvedCount}/{puzzleCount}:{moveCount}mvs {solveRate:.1f}%")
     for _ in range(FPS*3): puzzle.draw()
     puzzle.shutdown()
 

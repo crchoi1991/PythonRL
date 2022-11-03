@@ -10,7 +10,7 @@ Actions = { 'Left':(0, -1), 'Right':(0, 1), 'Up':(-1, 0), 'Down':(1, 0) }
 Width = 600
 Height = 400
 Delay = FPS//15
-ShuffleCount = 30
+ShuffleCount = 15
 
 # puzzle class
 class Puzzle:
@@ -24,25 +24,26 @@ class Puzzle:
 
         # 퍼즐을 초기화합니다.
         puzzle = [ [ r*m+c+1 for c in range(m) ] for r in range(n) ]
+        self.board = puzzle
 
         # 비어있는 곳의 위치 설정
         self.emptyr, self.emptyc = n-1, m-1
 
 		# shuffle
-        for _ in range(ShuffleCount):
-            v = random.randrange(4)
-            r, c = self.emptyr, self.emptyc
-            drc = ( (0, 1), (1, 0), (0, -1), (-1, 0) )
-            nr, nc = r+drc[v][0], c+drc[v][1]
-            # 옮겨야할 셀위치가 퍼즐 위치를 벗어나는 경우 무시
-            if nr < 0 or nr >= n or nc < 0 or nc >= m: continue
-            puzzle[r][c] = puzzle[nr][nc]
-            # 비어있는 위치 업데이트
-            self.emptyr, self.emptyc = nr, nc
+        while self.check() == 0:
+            for _ in range(ShuffleCount):
+                v = random.randrange(4)
+                r, c = self.emptyr, self.emptyc
+                drc = ( (0, 1), (1, 0), (0, -1), (-1, 0) )
+                nr, nc = r+drc[v][0], c+drc[v][1]
+                # 옮겨야할 셀위치가 퍼즐 위치를 벗어나는 경우 무시
+                if nr < 0 or nr >= n or nc < 0 or nc >= m: continue
+                puzzle[r][c] = puzzle[nr][nc]
+                # 비어있는 위치 업데이트
+                self.emptyr, self.emptyc = nr, nc
 
-        # 비어있는 칸의 숫자 넣기
-        puzzle[self.emptyr][self.emptyc] = 0
-        self.board = puzzle
+            # 비어있는 칸의 숫자 넣기
+            puzzle[self.emptyr][self.emptyc] = 0
 
         # pygame을 초기화합니다.
         pygame.init()
@@ -158,17 +159,20 @@ class Puzzle:
     def shutdown(self):
         pygame.quit()
         
-ss = { '123456789abcdef0':0.0 }
+ss = dict()
 with open("15-puzzle.dat", "r") as f:
 	while True:
 		line = f.readline()
 		if not line: break
 		dt = line.split()
 		ss[dt[0]] = float(dt[1])
+ss['123456789abcdef0'] = 0.0
 learning = 0.5
+solvedCount = 0
 isQuit = False
 while not isQuit:
     puzzle = Puzzle(4, 4)
+    moveCount = 0
     while True:
         if puzzle.update() == False:
             isQuit = True
@@ -182,12 +186,15 @@ while not isQuit:
             v = ss[ps] if ps in ss else mv
             if maxv < v: a, maxv = k, v
         ss[status] += learning*(-1+maxv-ss[status])
+        moveCount += 1
         if puzzle.action(a) == 0: break
         for _ in range(Delay): puzzle.draw()
+    if not isQuit:
+        solvedCount += 1
+        print(f"solved {solvedCount} : {moveCount} moves")
     for _ in range(FPS*3): puzzle.draw()
-    print("solved")
     puzzle.shutdown()
 
 with open("15-puzzle.dat", "w") as f:
 	for k in ss:
-		f.write("%s %s\n"%(k, ss[k]))
+		f.write(f"{k} {ss[k]:.2f}\n")

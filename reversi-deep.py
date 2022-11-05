@@ -8,7 +8,7 @@ import os.path
 
 class Game:
 	# 학습한 데이터를 저장할 파일 패스를 설정합니다.
-	cpPath = "deep/cp_{0:06}.ckpt"
+	cpPath = "reversi-deep/cp_{0:06}.ckpt"
 	
 	def __init__(self):
 		self.gameCount = 0

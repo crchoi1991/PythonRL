@@ -100,7 +100,7 @@ class Game:
 		winText = ("Lose", "Draw", "Win")
 		print(f"{winText[result]} W : {w}, B : {b}")
 		# 최종 보상을 선택 : 1 : 이겼다, 0 : 졌다, 0.5 : 비겼을 경우
-		reward = result/2
+		reward = result-1
 		# 마지막 상태는 더 이상 값이 필요 없는 상태
 		self.episode[-1] = (self.episode[-1][0], reward)
 		# 학습을 위해서 데이터 처리
@@ -152,7 +152,7 @@ class Game:
 			keras.layers.Dense(1024, activation='relu'),
 			keras.layers.Dense(1024, activation='relu'),
 			keras.layers.Dense(1024, activation='relu'),
-			keras.layers.Dense(1, activation='sigmoid'),
+			keras.layers.Dense(1, activation='tanh'),
 		])
 		# 설정한 모델을 컴파일합니다.
 		self.model.compile(loss='mean_squared_error',

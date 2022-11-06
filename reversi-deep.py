@@ -18,7 +18,7 @@ class Game:
 		self.batch_size = 32
 
 		# 강화학습을 위한 파라미터들
-		self.alpha = 0.1		# 학습률
+		self.alpha = 0.2		# 학습률
 		self.gamma = 1.0		# 미래 가치 반영률
 
 		# e-greedy(입실론 탐욕) 파라미터들
@@ -110,7 +110,7 @@ class Game:
 			rw = (1-self.alpha)*v + self.alpha*reward
 			x.append(st)
 			y.append(rw)
-			reward = self.gamma*rw
+			reward = self.gamma*reward
 		# 에피소드값을 이용하여 리플레이를 하도록 합니다.
 		self.replay(x, y)
 		return result

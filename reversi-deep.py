@@ -19,7 +19,7 @@ class Game:
 
 		# 강화학습을 위한 파라미터들
 		self.alpha = 0.5		# 학습률
-		self.gamma = 1.0		# 미래 가치 반영률
+		self.gamma = 0.9		# 미래 가치 반영률
 
 		# e-greedy(입실론 탐욕) 파라미터들
 		self.epsilon = 1.0	  # 초기 입실론
@@ -120,7 +120,6 @@ class Game:
 		if p < 0: return False
 		self.send("%04d pt %4d"%(8, p))
 		self.episode.append((nst, v))
-		print("(%d, %d)"%(p/8, p%8), end="")
 		return True
 
 	def action(self, board):

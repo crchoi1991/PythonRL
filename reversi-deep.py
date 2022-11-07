@@ -18,7 +18,7 @@ class Game:
 		self.batch_size = 32
 
 		# 강화학습을 위한 파라미터들
-		self.alpha = 0.2		# 학습률
+		self.alpha = 0.5		# 학습률
 		self.gamma = 1.0		# 미래 가치 반영률
 
 		# e-greedy(입실론 탐욕) 파라미터들
@@ -132,7 +132,7 @@ class Game:
 			r = random.choice(hints)
 			ret, nst = self.preRun(r)
 			if not ret: return None, -1, 0
-			v = self.model.predict(nst.reshape(1, 64))[0, 0]
+			v = self.model.predict(nst.reshape(1, 64), verbose=0)[0, 0]
 			return nst, r, v
 
 		# 놓을 수 있는 자리 중 가장 높은 값을 주는 것을 선택
@@ -140,7 +140,7 @@ class Game:
 		for h in hints:
 			ret, nst = self.preRun(h)
 			if not ret: return None, -1, 0
-			v = self.model.predict(nst.reshape(1, 64))[0, 0]
+			v = self.model.predict(nst.reshape(1, 64), verbose=0)[0, 0]
 			if v > maxv: maxp, maxnst, maxv = h, nst, v
 		return nst, maxp, maxv
 

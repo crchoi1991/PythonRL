@@ -15,7 +15,7 @@ from pygame.locals import *
 import copy
 
 # 기본적인 상수들 정의
-FPS = 10			# Frame Per Second (초당 프레임 수)
+FPS = 30			# Frame Per Second (초당 프레임 수)
 SpaceSize = 50	  # 오델로 셀의 공간 크기 50x50 (pixelxpixel)
 HalfSpace = SpaceSize//2
 Margin = 10

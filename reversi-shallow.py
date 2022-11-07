@@ -8,7 +8,7 @@ import os.path
 
 class Game:
     # 학습한 데이터를 저장할 파일 패스를 설정합니다.
-    cpPath = "shallow/cp_{0:06}.ckpt"
+    cpPath = "reversi-shallow/cp_{0:06}.ckpt"
     
     def __init__(self):
         self.gameCount = 0
@@ -18,7 +18,7 @@ class Game:
         self.batch_size = 32
 
         # 강화학습을 위한 파라미터들
-        self.alpha = 0.1        # 학습률
+        self.alpha = 0.2        # 학습률
         self.gamma = 0.99       # 미래 가치 반영률
 
         # e-greedy(입실론 탐욕) 파라미터들
@@ -96,7 +96,7 @@ class Game:
         winText = ("Lose", "Draw", "Win")
         print(f"{winText[result]} W : {w}, B : {b}")
         # 최종 보상을 선택 : 1 : 이겼다, 0 : 졌다, 0.5 : 비겼을 경우
-        reward = result/2
+        reward = result-1
         # 마지막 상태는 더 이상 값이 필요 없는 상태
         self.episode[-1] = (self.episode[-1][0], reward)
         # 학습을 위해서 데이터 처리
@@ -106,7 +106,7 @@ class Game:
             rw = (1-self.alpha)*v + self.alpha*reward
             x.append(st)
             y.append(rw)
-            reward = self.gamma*rw
+            reward = self.gamma*reward
         # 에피소드값을 이용하여 리플레이를 하도록 합니다.
         self.replay(x, y)
         return result
@@ -128,7 +128,7 @@ class Game:
             r = random.choice(hints)
             ret, nst = self.preRun(r)
             if not ret: return None, -1, 0
-            v = self.model.predict(nst.reshape(1, 64))[0, 0]
+            v = self.model.predict(nst.reshape(1, 64), verbose=0)[0, 0]
             return nst, r, v
 
         # 놓을 수 있는 자리 중 가장 높은 값을 주는 것을 선택
@@ -136,7 +136,7 @@ class Game:
         for h in hints:
             ret, nst = self.preRun(h)
             if not ret: return None, -1, 0
-            v = self.model.predict(nst.reshape(1, 64))[0, 0]
+            v = self.model.predict(nst.reshape(1, 64), verbose=0)[0, 0]
             if v > maxv: maxp, maxnst, maxv = h, nst, v
         return nst, maxp, maxv
 
@@ -144,9 +144,9 @@ class Game:
     def buildModel(self):
         # keras sequential을 만드는데,
         self.model = keras.Sequential([
-            keras.layers.Dense(128, input_dim=64, activation='sigmoid'),
-            keras.layers.Dense(128, activation='sigmoid'),
-            keras.layers.Dense(1, activation='sigmoid'),
+            keras.layers.Dense(128, input_dim=64, activation='relu'),
+            keras.layers.Dense(128, activation='relu'),
+            keras.layers.Dense(1, activation='tanh'),
         ])
         # 설정한 모델을 컴파일합니다.
         self.model.compile(loss='mean_squared_error',

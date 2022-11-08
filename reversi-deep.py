@@ -14,7 +14,7 @@ class Game:
 		self.gameCount = 0
 
 		# 머신러닝을 위한 파라미터들
-		self.epochs = 5
+		self.epochs = 10
 		self.batch_size = 32
 
 		# 강화학습을 위한 파라미터들
@@ -35,10 +35,10 @@ class Game:
 			try:
 				self.sock.connect(("127.0.0.1", 8791))
 			except socket.error:
-				print(f"Socket.error : {socket.error.errno}")
+				print(f"connect : {socket.error.errno}")
 				return False
 			except socket.timeout:
-				print("Socket timeout")
+				print("connect : socket timeout")
 				time.sleep(1.0)
 				continue
 			break
@@ -110,7 +110,7 @@ class Game:
 			rw = (1-self.alpha)*v + self.alpha*reward
 			x.append(st)
 			y.append(rw)
-			reward = self.gamma*reward
+			reward *= self.gamma
 		# 에피소드값을 이용하여 리플레이를 하도록 합니다.
 		self.replay(x, y)
 		return result
@@ -147,10 +147,10 @@ class Game:
 	def buildModel(self):
 		# keras sequential을 만드는데,
 		self.model = keras.Sequential([
-			keras.layers.Dense(1024, input_dim=64, activation='relu'),
-			keras.layers.Dense(1024, activation='relu'),
-			keras.layers.Dense(1024, activation='relu'),
-			keras.layers.Dense(1024, activation='relu'),
+			keras.layers.Dense(128, input_dim=64, activation='relu'),
+			keras.layers.Dense(256, activation='relu'),
+			keras.layers.Dense(256, activation='relu'),
+			keras.layers.Dense(256, activation='relu'),
 			keras.layers.Dense(1, activation='tanh'),
 		])
 		# 설정한 모델을 컴파일합니다.
@@ -203,7 +203,7 @@ while not quitFlag:
 	while True:
 		cmd, buf = game.recv()
 		if cmd == "et":
-			print(f"Network Error!! : {buf}")
+			print(f"[et]Network Error!! : {buf}")
 			break
 		if cmd == "qt":
 			w = game.onQuit(buf)

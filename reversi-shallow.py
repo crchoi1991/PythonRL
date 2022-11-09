@@ -106,7 +106,7 @@ class Game:
             rw = (1-self.alpha)*v + self.alpha*reward
             x.append(st)
             y.append(rw)
-            reward = self.gamma*reward
+            reward *= self.gamma
         # 에피소드값을 이용하여 리플레이를 하도록 합니다.
         self.replay(x, y)
         return result
@@ -116,7 +116,6 @@ class Game:
         if p < 0: return False
         self.send("%04d pt %4d"%(8, p))
         self.episode.append((nst, v))
-        print("(%d, %d)"%(p/8, p%8), end="")
         return True
 
     def action(self, board):

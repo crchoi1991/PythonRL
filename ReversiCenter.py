@@ -15,7 +15,7 @@ from pygame.locals import *
 import copy
 
 # 기본적인 상수들 정의
-FPS = 30			# Frame Per Second (초당 프레임 수)
+FPS = 40			# Frame Per Second (초당 프레임 수)
 SpaceSize = 50	  # 오델로 셀의 공간 크기 50x50 (pixelxpixel)
 HalfSpace = SpaceSize//2
 Margin = 10
@@ -94,7 +94,7 @@ def GetFlipTiles(board, p, t):
 def FlipTiles(p):
 	flips = GetFlipTiles(board, p, turn)
 	# 타일 뒤집기 애니메이션
-	for rgb in range(0, 255, 100):
+	for rgb in range(0, 255, 90):
 		color = tuple([rgb]*3) if turn == 1 else tuple([255-rgb]*3)
 		for t in flips:
 			cx, cy = GetCenter(t)

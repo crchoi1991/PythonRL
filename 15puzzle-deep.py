@@ -10,7 +10,7 @@ Actions = { 'Left':(0, -1), 'Right':(0, 1), 'Up':(-1, 0), 'Down':(1, 0) }
 Width = 600
 Height = 400
 Delay = FPS//15
-ShuffleCount = 60
+ShuffleCount = 20
 
 # puzzle class
 class Puzzle:
@@ -57,7 +57,7 @@ class Puzzle:
 		
 		# 마지막 움직인 퍼즐
 		self.last = None
-		self.alpha = 1.0
+
 
 	# 퍼즐이 다 맞았는지 검사합니다.
 	def check(self):
@@ -80,19 +80,11 @@ class Puzzle:
 	def preAction(self, a):
 		d = Actions[a]
 		nr, nc = (self.emptyr+d[0], self.emptyc+d[1])
-		if nr < 0 or nr >= self.n or nc < 0 or nc >= self.m: return None, 0.0
+		if nr < 0 or nr >= self.n or nc < 0 or nc >= self.m: return None
 		board=[[self.board[r][c] for c in range(self.m)] for r in range(self.n)]
 		board[self.emptyr][self.emptyc] = board[nr][nc]
 		board[nr][nc] = 0
-		return self.getStatus(board), self.getMaxValue(board)
-
-	def getStatus(self, board):
-		s = ""
-		for r in range(self.n):
-			for c in range(self.m):
-				if board[r][c] >= 10: s += chr(ord('a')+board[r][c]-10)
-				else: s += str(board[r][c])
-		return s
+		return board
 
 	def update(self):
 		# 이벤트를 처리합니다.
@@ -100,17 +92,6 @@ class Puzzle:
 			if e.type == QUIT or (e.type == KEYUP and e.key == K_ESCAPE):
 				return False
 		return True
-
-	def getMaxValue(self, board):
-		v = 0.0
-		for r in range(self.n):
-			for c in range(self.m):
-				if board[r][c] != r*self.m+c+1:
-					if board[r][c] == 0: continue
-					x = board[r][c]-1
-					er, ec = x//3, x%3
-					v -= abs(r-er) + abs(c-ec)
-		return v
 
 	# 그림을 그립니다.
 	def draw(self):
@@ -143,7 +124,8 @@ class Puzzle:
 			pygame.draw.rect(display, (250, 250, 250), (x, y, self.size, self.size))
 			pygame.draw.rect(display, (0, 0, 0), (x, y, self.size, self.size), 1)
 			# 박스 안에 글자 쓰기
-			text = self.font.render(str(puzzle[self.last[0]][self.last[1]]), True, (0, 0, 0))
+			s = str(puzzle[self.last[0]][self.last[1]])
+			text = self.font.render(s, True, (0, 0, 0))
 			rect = text.get_rect()
 			rect.center = (x+self.size//2, y+self.size//2)
 			display.blit(text, rect)
@@ -164,63 +146,83 @@ import tensorflow as tf
 from tensorflow import keras
 import os.path
 
-CPath = "15puzzle/cp_{0:06}.ckpt"
-Epochs = 10
+CPath = "15puzzle-deep/cp_{0:06}.ckpt"
+Epochs = 5
 BatchSize = 32
 Alpha = 0.1
 Gamma = 1.0
 
+gameCount = 0
+
 def BuildModel():
+	global gameCount
 	model = keras.Sequential([
-		keras.layers.Dense(1024, input_dim=16, activation='relu'),
-		keras.layers.Dense(1024, input_dim=16, activation='relu'),
-		keras.layers.Dense(1024, input_dim=16, activation='relu'),
-		keras.layers.Dense(1024, input_dim=16, activation='relu'),
+		keras.layers.Dense(32, input_dim=16, activation='relu'),
+		keras.layers.Dense(64, activation='relu'),
+		keras.layers.Dense(128, activation='relu'),
+		keras.layers.Dense(128, activation='relu'),
 		keras.layers.Dense(1, activation='linear')
 	])
-	model.compile(loss='mean-squared_error',
+	model.compile(loss='mean_squared_error',
 		optimizer=keras.optimizers.Adam())
+		
+	# 학습한 데이터를 읽어서 모델에 적용합니다.
+	dir = os.path.dirname(CPath)
+	latest = tf.train.latest_checkpoint(dir)
+	# 현재 학습한 것이 없는 경우는 무시토록 합니다.
+	if latest:
+		print(f"Load weights {latest}")
+		# 현재 인공신경망 모델에 저장된 웨이트를 로드합니다.
+		model.load_weights(latest)
+		idx = latest.find("cp_")
+		gameCount = int(latest[idx+3:idx+9])
 	return model
 
-ss = dict()
-with open("15-puzzle.dat", "r") as f:
-	while True:
-		line = f.readline()
-		if not line: break
-		dt = line.split()
-		ss[dt[0]] = float(dt[1])
-ss['123456789abcdef0'] = 0.0
-learning = 0.5
+def Save(model):
+	saveFile = CPath.format(gameCount)
+	print(f"Save weights {saveFile}")
+	model.save_weights(saveFile)
+
 solvedCount = 0
 puzzleCount = 0
 isQuit = False
+model = BuildModel()
 while not isQuit:
+	gameCount += 1
+	print(f"Game {gameCount}")
 	puzzle = Puzzle(4, 4)
 	moveCount = 0
-	while moveCount <= ShuffleCount:
+	x, y = [], []
+	while moveCount <= min(ShuffleCount, 100):
 		if puzzle.update() == False:
 			isQuit = True
 			break
-		status = puzzle.getStatus(puzzle.board)
-		if status not in ss: ss[status] = puzzle.getMaxValue(puzzle.board)
+		st = np.array([float(puzzle.board[r][c]) for r in range(4) for c in range(4)])
+		if puzzle.check() == 0:
+			x.append(st)
+			y.append(0.0)
+			break
 		a, maxv = '', -1000000
 		for k in Actions:
-			ps, mv = puzzle.preAction(k)
+			ps = puzzle.preAction(k)
 			if ps == None: continue
-			v = ss[ps] if ps in ss else mv
+			nst = np.array([float(ps[r][c]) for r in range(4) for c in range(4)])
+			v = model.predict(nst.reshape(1, 16), verbose=0)[0, 0]
 			if maxv < v: a, maxv = k, v
-		ss[status] += learning*(-1+maxv-ss[status])
+		v = model.predict(st.reshape(1, 16), verbose=0)[0, 0]
+		v += Alpha*(maxv-v-1)
+		x.append(st)
+		y.append(v)
 		moveCount += 1
-		if puzzle.action(a) == 0: break
+		puzzle.action(a)
 		for _ in range(Delay): puzzle.draw()
 	if not isQuit:
 		puzzleCount += 1
 		solvedCount += 1 if moveCount <= ShuffleCount else 0
+		model.fit(np.array(x), np.array(y), epochs=Epochs, batch_size=BatchSize)
 		solveRate = solvedCount*100/puzzleCount
 		print(f"{solvedCount}/{puzzleCount}:{moveCount}mvs {solveRate:.1f}%")
+		if gameCount%10 == 0: Save(model)
 	for _ in range(FPS*3): puzzle.draw()
 	puzzle.shutdown()
 
-with open("15-puzzle.dat", "w") as f:
-	for k in ss:
-		f.write(f"{k} {ss[k]:.2f}\n")

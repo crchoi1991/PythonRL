@@ -15,7 +15,7 @@ Cells = HCells*VCells
 CellSize = min(Width//HCells, Height//VCells)
 Black, White, Grey = (0, 0, 0), (250, 250, 250), (120, 120, 120)
 
-ShuffleCount = 40
+ShuffleCount = 60
 
 # puzzle class
 class Puzzle:
@@ -132,7 +132,7 @@ Epochs = 5
 BatchSize = 32
 Alpha = 0.3
 Gamma = 1.0
-LSize = 1024
+LSize = 2048
 
 gameCount = 0
 

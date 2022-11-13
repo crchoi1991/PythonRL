@@ -14,8 +14,9 @@ class Game:
 		self.gameCount = 0
 
 		# 머신러닝을 위한 파라미터들
-		self.epochs = 10
+		self.epochs = 4
 		self.batch_size = 32
+		self.maxSize = 1024
 
 		# 강화학습을 위한 파라미터들
 		self.alpha = 0.5		# 학습률
@@ -28,6 +29,9 @@ class Game:
 
 		# 인공신경망을 만듭니다.
 		self.buildModel()
+
+		# 학습을 위해서 데이터 처리
+		self.x, self.y = [], []
 
 	def connect(self):
 		while True:
@@ -103,16 +107,16 @@ class Game:
 		reward = result-1
 		# 마지막 상태는 더 이상 값이 필요 없는 상태
 		self.episode[-1] = (self.episode[-1][0], reward)
-		# 학습을 위해서 데이터 처리
-		x, y = [], []
 		# 에피소드를 거꾸로 거슬러 올라가야한다.
 		for st, v in self.episode[::-1]:
 			rw = (1-self.alpha)*v + self.alpha*reward
-			x.append(st)
-			y.append(rw)
+			self.x.append(st)
+			self.y.append(rw)
 			reward *= self.gamma
 		# 에피소드값을 이용하여 리플레이를 하도록 합니다.
-		self.replay(x, y)
+		self.x = self.x[-self.maxSize:]
+		self.y = self.y[-self.maxSize:]
+		self.replay()
 		return result
 
 	def onBoard(self, buf):
@@ -174,11 +178,10 @@ class Game:
 		if self.epsilon < self.epsilonMin: self.epsilon = self.epsilonMin
 
 	# 인공신경망으로 학습을 하기 위한 리플레이
-	def replay(self, x, y):
-		xarray = np.array(x)
-		yarray = np.array(y)
-
+	def replay(self):
 		# xarray 입력, yarray 출력을 이용하여 학습 진행
+		xarray = np.array(self.x)
+		yarray = np.array(self.y)
 		r = self.model.fit(xarray, yarray,
 						   epochs = self.epochs,
 						   batch_size = self.batch_size)

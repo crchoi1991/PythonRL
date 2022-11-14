@@ -15,7 +15,7 @@ Cells = HCells*VCells
 CellSize = min(Width//HCells, Height//VCells)
 Black, White, Grey = (0, 0, 0), (250, 250, 250), (120, 120, 120)
 
-MaxShuffleCount = 40
+MaxShuffleCount = 50
 ShuffleCount = 10
 
 # puzzle class

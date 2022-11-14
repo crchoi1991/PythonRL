@@ -131,7 +131,7 @@ import tensorflow as tf
 from tensorflow import keras
 import os.path
 
-CPath = "15puzzle-deep1/cp_{0:06}.ckpt"
+CPath = "15puzzle-deep2/cp_{0:06}.ckpt"
 Epochs = 5
 BatchSize = 32
 Alpha = 0.3
@@ -143,7 +143,7 @@ gameCount = 0
 def BuildModel():
 	global gameCount
 	model = keras.Sequential([
-		keras.layers.Dense(64, input_dim=16, activation='selu'),
+		keras.layers.Dense(64, input_dim=Cells-1, activation='tanh'),
 		keras.layers.Dense(128, activation='selu'),
 		keras.layers.Dense(256, activation='relu'),
 		keras.layers.Dense(128, activation='relu'),
@@ -170,6 +170,13 @@ def Save(model):
 	print(f"Save weights {saveFile}")
 	model.save_weights(saveFile)
 
+def GetStatus(board):
+	status = [ 0 ]*(Cells-1)
+	for i in range(Cells):
+		if board[i]==0: continue
+		status[board[i]-1] = i-board[i]+1
+	return np.array(status)
+
 solvedCount, puzzleCount, maxSolvedMove = 0, 0, 0
 isQuit = False
 model = BuildModel()
@@ -190,7 +197,7 @@ while not isQuit:
 		if puzzle.update() == False:
 			isQuit = True
 			break
-		st = np.array(puzzle.board)
+		st = GetStatus(puzzle.board)
 		if puzzle.check() == 0:
 			x.append(st)
 			y.append(0.0)
@@ -199,11 +206,11 @@ while not isQuit:
 		for k in Actions:
 			ps, e = puzzle.preAction(k)
 			if ps == None or e == puzzle.last: continue
-			nst = np.array(ps)
-			v = model.predict(nst.reshape(1, 16), verbose=0)[0, 0]
+			nst = GetStatus(ps)
+			v = model.predict(nst.reshape(1, Cells-1), verbose=0)[0, 0]
 			if maxv < v: a, maxv = k, v
 		print(f"({a}, {maxv:.2f})", end=' ')
-		v = model.predict(st.reshape(1, 16), verbose=0)[0, 0]
+		v = model.predict(st.reshape(1, Cells-1), verbose=0)[0, 0]
 		v += Alpha*(Gamma*maxv-v-1)
 		x.append(st)
 		y.append(v)

@@ -15,22 +15,20 @@ Cells = HCells*VCells
 CellSize = min(Width//HCells, Height//VCells)
 Black, White, Grey = (0, 0, 0), (250, 250, 250), (120, 120, 120)
 
-MaxShuffleCount = 60
-ShuffleCount = 10
-
 # puzzle class
 class Puzzle:
-	def __init__(self):
-		global ShuffleCount
+	def __init__(self, gameCount, shuffleCount):
+		# Set window caption
+		caption = f"Deep3 : Game {gameCount} shuffle {shuffleCount}"
+		pygame.display.set_caption(caption)
+
 		# 퍼즐을 초기화합니다.
 		self.board = [k+1 for k in range(Cells)]
 		self.empty = Cells-1
 
 		# shuffle
-		ShuffleCount = random.randint(3, MaxShuffleCount)
-		print(f"Shuffle count : {ShuffleCount}")
 		k = 0
-		while k < ShuffleCount or self.check() == 0:
+		while k < shuffleCount or self.check() == 0:
 			v = random.choice(list(Actions.values()))
 			r, c = self.empty//HCells, self.empty%HCells
 			nr, nc = r+v[0], c+v[1]
@@ -184,12 +182,12 @@ display = pygame.display.set_mode(( Margin*2+HCells*CellSize,
 # 텍스트를 설정할 폰트 생성
 font = pygame.font.Font('freesansbold.ttf', CellSize//2-1)
 x, y = [], []
+shuffleCount = 5
 while not isQuit:
 	gameCount += 1
-	print(f"Game {gameCount}")
-	puzzle = Puzzle()
+	puzzle = Puzzle(gameCount, shuffleCount)
 	moveCount = 0
-	maxMoveCount = min(ShuffleCount+1, 100)
+	maxMoveCount = min(shuffleCount+1, 100)
 	while moveCount <= maxMoveCount:
 		if puzzle.update() == False:
 			isQuit = True
@@ -225,6 +223,9 @@ while not isQuit:
 		solveRate = solvedCount*100/puzzleCount
 		print(f"{solvedCount}/{puzzleCount} {solveRate:.1f}%")
 		print(f"Moves : {moveCount}/{maxSolvedMove}")
+		if solveRate > 70.0 and puzzleCount >= 10:
+			solvedCount, puzzleCount = 0, 0
+			shuffleCount += 1
 		if gameCount%10 == 0: Save(model)
 	for _ in range(FPS): puzzle.draw()
 

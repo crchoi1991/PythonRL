@@ -223,7 +223,7 @@ while not isQuit:
 		solveRate = solvedCount*100/puzzleCount
 		print(f"{solvedCount}/{puzzleCount} {solveRate:.1f}%")
 		print(f"Moves : {moveCount}/{maxSolvedMove}")
-		if solveRate > 70.0 and puzzleCount >= 10:
+		if solveRate > 75.0 and puzzleCount >= 10:
 			solvedCount, puzzleCount = 0, 0
 			shuffleCount += 1
 		if gameCount%10 == 0: Save(model)

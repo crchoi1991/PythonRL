@@ -16,7 +16,7 @@ MULTIPASS = 2
 # pygame에 필요한 상수들 정의
 FPS = 30
 Margin = (10, 10, 10, 10)     # Left, Top, Right, Bottom
-CellSize = 20
+CellSize = 10
 Start, End = (0, 0), (0, 0)
 
 # maze에 통로를 만드는 함수
@@ -158,10 +158,11 @@ def dfs(maze, n, m, c, path):
     return 0
     
 n, m = map(int, input("세로의 크기와 가로의 크기 입력 :  ").split())
-CellSize = min(2000//m, 1000//n)
+CellSize = min(800//m, 600//n)
 
 # pygame을 초기화합니다.
 pygame.init()
+pygame.display.set_caption(f"Maze {n}x{m}")
 
 # 그림을 그릴 디스플레이 서피스를 생성합니다.
 width = Margin[0] + Margin[2] + m*CellSize

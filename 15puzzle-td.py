@@ -9,35 +9,37 @@ FPS = 30
 Actions = { 'Left':(0, -1), 'Right':(0, 1), 'Up':(-1, 0), 'Down':(1, 0) }
 Width = 600
 Height = 400
-Delay = FPS//15
+Delay = 3
 HCells, VCells = 4, 4
 Cells = HCells*VCells
 CellSize = min(Width//HCells, Height//VCells)
 Black, White, Grey = (0, 0, 0), (250, 250, 250), (120, 120, 120)
 
-ShuffleCount = 30
-
 # puzzle class
 class Puzzle:
-	def __init__(self):
+	def __init__(self, gameCount, shuffleCount):
+		# Set window caption
+		caption = f"TD : Game {gameCount} shuffle {shuffleCount}"
+		pygame.display.set_caption(caption)
+
 		# 퍼즐을 초기화합니다.
 		self.board = [k+1 for k in range(Cells)]
 		self.empty = Cells-1
 
 		# shuffle
 		k = 0
-		while k < ShuffleCount or self.check() == 0:
+		while k < shuffleCount or self.check() == 0:
 			v = random.choice(list(Actions.values()))
 			r, c = self.empty//HCells, self.empty%HCells
 			nr, nc = r+v[0], c+v[1]
-			k += 1
 			# 옮겨야할 셀위치가 퍼즐 위치를 벗어나는 경우 무시
 			if nr < 0 or nr >= VCells or nc < 0 or nc >= HCells: continue
 			self.board[self.empty] = self.board[nr*HCells+nc]
 			self.empty = nr*HCells+nc
+			k += 1
 
 		# 비어있는 칸의 숫자 넣기
-		self.board[self.empty] = 0
+		self.board[self.empty] = Cells
 
 		# 마지막 움직인 퍼즐
 		self.last = None
@@ -55,7 +57,7 @@ class Puzzle:
 		self.last = self.empty
 		self.empty = nr*HCells+nc
 		self.board[self.last] = self.board[self.empty]
-		self.board[self.empty] = 0
+		self.board[self.empty] = Cells
 		self.alpha = 0.0
 		return self.check()
 
@@ -66,15 +68,32 @@ class Puzzle:
 		if nr < 0 or nr >= VCells or nc < 0 or nc >= HCells: return None, 0
 		board=[self.board[k] for k in range(Cells)]
 		board[self.empty] = board[nr*HCells+nc]
-		board[nr*HCells+nc] = 0
-		return board, nr*HCells+nc
+		board[nr*HCells+nc] = Cells
+		return board, self.getMaxValue(board)
+
+	def getStatus(self, board):
+		s = ""
+		for k in range(Cells):
+			if board[k] >= 10: s += chr(ord('a')+board[k]-10)
+			else: s += str(board[k])
+		return s
 
 	def update(self):
 		# 이벤트를 처리합니다.
 		for e in pygame.event.get():
-			if e.type == QUIT: return False
-			if e.type == KEYUP and e.key == K_ESCAPE: return False
+			if e.type == QUIT or (e.type == KEYUP and e.key == K_ESCAPE):
+				return False
 		return True
+
+	def getMaxValue(self, board):
+		v = 0.0
+		for k in range(Cells):
+			r, c = k//HCells, k%HCells
+			if board[k] == k+1: continue
+			x = board[k]-1
+			er, ec = x//3, x%3
+			v -= abs(r-er) + abs(c-ec)
+		return v
 
 	# 그림을 그립니다.
 	def draw(self):
@@ -89,7 +108,7 @@ class Puzzle:
 			r, c = k//HCells, k%HCells
 			# 박스 그리기
 			color = White
-			if self.board[k] == 0 or k == self.last: continue
+			if self.board[k] == Cells or k == self.last: continue
 			pygame.draw.rect(display, color, (Margin+c*CellSize,
 				Margin+r*CellSize, CellSize, CellSize))
 			pygame.draw.rect(display, Black, (Margin+c*CellSize,
@@ -114,7 +133,7 @@ class Puzzle:
 			rect = text.get_rect()
 			rect.center = (x+CellSize//2, y+CellSize//2)
 			display.blit(text, rect)
-			if self.alpha < 0.95: self.alpha += 0.2
+			if self.alpha < 0.95: self.alpha += 0.1
 		# 디스플레이를 업데이를 합니다.
 		pygame.display.update()
 		# FPS에 맞게 잠을 잡니다.
@@ -122,100 +141,61 @@ class Puzzle:
 		#기본은 True를 반환
 		return True
 		
-import numpy as np
-import tensorflow as tf
-from tensorflow import keras
-import os.path
-
-CPath = "15puzzle-deep/cp_{0:06}.ckpt"
-Epochs = 5
-BatchSize = 32
-Alpha = 0.3
-Gamma = 1.0
-
-gameCount = 0
-
-def BuildModel():
-	global gameCount
-	model = keras.Sequential([
-		keras.layers.Dense(32, input_dim=16, activation='relu'),
-		keras.layers.Dense(64, activation='relu'),
-		keras.layers.Dense(128, activation='relu'),
-		keras.layers.Dense(128, activation='relu'),
-		keras.layers.Dense(1, activation='linear')
-	])
-	model.compile(loss='mean_squared_error',
-		optimizer=keras.optimizers.Adam())
-		
-	# 학습한 데이터를 읽어서 모델에 적용합니다.
-	dir = os.path.dirname(CPath)
-	latest = tf.train.latest_checkpoint(dir)
-	# 현재 학습한 것이 없는 경우는 무시토록 합니다.
-	if latest:
-		print(f"Load weights {latest}")
-		# 현재 인공신경망 모델에 저장된 웨이트를 로드합니다.
-		model.load_weights(latest)
-		idx = latest.find("cp_")
-		gameCount = int(latest[idx+3:idx+9])
-	return model
-
-def Save(model):
-	saveFile = CPath.format(gameCount)
-	print(f"Save weights {saveFile}")
-	model.save_weights(saveFile)
+# 상태값 저장용
+ss = dict()
+with open("15puzzle-td.dat", "r") as f:
+	while True:
+		line = f.readline()
+		if not line: break
+		dt = line.split()
+		ss[dt[0]] = float(dt[1])
+ss['123456789abcdef0'] = 0.0
 
 solvedCount, puzzleCount, maxSolvedMove = 0, 0, 0
 isQuit = False
-model = BuildModel()
 pygame.init()
 # 그림을 그릴 디스플레이를 설정합니다.
 display = pygame.display.set_mode(( Margin*2+HCells*CellSize,
 	Margin*2+VCells*CellSize))
 # 텍스트를 설정할 폰트 생성
 font = pygame.font.Font('freesansbold.ttf', CellSize//2-1)
+x, y = [], []
+shuffleCount = 5
+learning = 0.5
 while not isQuit:
-	gameCount += 1
-	print(f"Game {gameCount}")
-	puzzle = Puzzle()
+	puzzle = Puzzle(puzzleCount+1, shuffleCount)
 	moveCount = 0
-	x, y = [], []
-	maxMoveCount = min(ShuffleCount+1, 100)
+	maxMoveCount = min(shuffleCount+1, 100)
 	while moveCount <= maxMoveCount:
 		if puzzle.update() == False:
 			isQuit = True
 			break
-		st = np.array(puzzle.board)
-		if puzzle.check() == 0:
-			x.append(st)
-			y.append(0.0)
-			break
+		if puzzle.check() == 0: break
+		status = puzzle.getStatus(puzzle.board)
+		if status not in ss: ss[status] = puzzle.getMaxValue(puzzle.board)
 		a, maxv = '', -1000000
 		for k in Actions:
-			ps, e = puzzle.preAction(k)
-			if ps == None or e == puzzle.last: continue
-			nst = np.array(ps)
-			v = model.predict(nst.reshape(1, 16), verbose=0)[0, 0]
+			ps, mv = puzzle.preAction(k)
+			if ps == None: continue
+			ps = puzzle.getStatus(ps)
+			v = ss[ps] if ps in ss else mv
 			if maxv < v: a, maxv = k, v
-		print(f"({a}, {maxv:.2f})", end=' ')
-		v = model.predict(st.reshape(1, 16), verbose=0)[0, 0]
-		v += Alpha*(Gamma*maxv-v-1)
-		x.append(st)
-		y.append(v)
+		ss[status] += learning*(-1+maxv-ss[status])
 		moveCount += 1
 		puzzle.action(a)
 		for _ in range(Delay): puzzle.draw()
 	if not isQuit:
 		puzzleCount += 1
-		if moveCount <= maxMoveCount:
-			solvedCount += 1
-			if maxSolvedMove < moveCount: maxSolvedMove = moveCount
-		model.fit(np.array(x), np.array(y), epochs=Epochs,
-			batch_size=BatchSize)
+		solvedCount += 1 if moveCount <= maxMoveCount else 0
 		solveRate = solvedCount*100/puzzleCount
-		print(f"{solvedCount}/{puzzleCount} {solveRate:.1f}%")
-		print(f"Moves : {moveCount}/{maxSolvedMove}")
-		if gameCount%10 == 0: Save(model)
+		print(f"{solvedCount}/{puzzleCount}:{moveCount}mvs {solveRate:.1f}%")
+		if solveRate > 75.0 and puzzleCount >= 10:
+			solvedCount, puzzleCount = 0, 0
+			shuffleCount += 1
 	for _ in range(FPS): puzzle.draw()
 
 pygame.quit()
 
+with open("15puzzle-td.dat", "w") as f:
+	for k in ss:
+		f.write(f"{k} {ss[k]:.2f}\n")

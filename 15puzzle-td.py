@@ -73,7 +73,7 @@ class Puzzle:
 
 	def getStatus(self, board):
 		s = ""
-		for k in range(Cells):
+		for k in range(Cells-1):
 			if board[k] >= 10: s += chr(ord('a')+board[k]-10)
 			else: s += str(board[k])
 		return s
@@ -165,7 +165,7 @@ learning = 0.5
 while not isQuit:
 	puzzle = Puzzle(puzzleCount+1, shuffleCount)
 	moveCount = 0
-	maxMoveCount = min(shuffleCount+1, 100)
+	maxMoveCount = min(shuffleCount+5, 100)
 	while moveCount <= maxMoveCount:
 		if puzzle.update() == False:
 			isQuit = True

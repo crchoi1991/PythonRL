@@ -158,7 +158,7 @@ def dfs(maze, n, m, c, path):
     return 0
     
 n, m = map(int, input("세로의 크기와 가로의 크기 입력 :  ").split())
-CellSize = min(800//m, 600//n)
+CellSize = min(1200//m, 1000//n)
 
 # pygame을 초기화합니다.
 pygame.init()

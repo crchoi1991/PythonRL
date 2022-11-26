@@ -14,7 +14,7 @@ class Game:
 		self.gameCount = 0
 
 		# 머신러닝을 위한 파라미터들
-		self.epochs = 4
+		self.epochs = 6
 		self.batch_size = 32
 		self.maxSize = 1024
 

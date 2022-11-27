@@ -1,4 +1,3 @@
-# nxm 슬라이딩 퍼즐 섞어놓기
 import random
 import time
 import pygame
@@ -9,7 +8,7 @@ FPS = 30
 Actions = { 'Left':(0, -1), 'Right':(0, 1), 'Up':(-1, 0), 'Down':(1, 0) }
 Width = 600
 Height = 400
-Delay = 3
+Delay = 2
 HCells, VCells = 4, 4
 Cells = HCells*VCells
 CellSize = min(Width//HCells, Height//VCells)
@@ -165,7 +164,7 @@ learning = 0.5
 while not isQuit:
 	puzzle = Puzzle(puzzleCount+1, shuffleCount)
 	moveCount = 0
-	maxMoveCount = min(shuffleCount+5, 100)
+	maxMoveCount = min(shuffleCount+8, 100)
 	while moveCount <= maxMoveCount:
 		if puzzle.update() == False:
 			isQuit = True

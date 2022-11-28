@@ -6,6 +6,7 @@ from pygame.locals import *
 
 Margin = 10
 FPS = 20
+RectColor = (0, 0, 0)
 
 # puzzle class
 class Puzzle:
@@ -108,7 +109,7 @@ class Puzzle:
                 if puzzle[r][c] == 0 or (r, c) == self.last: color = (100, 100, 100)
                 pygame.draw.rect(display, color, (Margin+c*self.size,
                     Margin+r*self.size, self.size, self.size))
-                pygame.draw.rect(display, (0, 0, 0), (Margin+c*self.size,
+                pygame.draw.rect(display, RectColor, (Margin+c*self.size,
                     Margin+r*self.size, self.size, self.size), 1)
                 # 박스 안에 글자 쓰기
                 if puzzle[r][c] == 0 or (r, c) == self.last: continue
@@ -122,7 +123,7 @@ class Puzzle:
             x = Margin+(self.alpha*self.last[1]+(1-self.alpha)*self.emptyc)*self.size
             y = Margin+(self.alpha*self.last[0]+(1-self.alpha)*self.emptyr)*self.size
             pygame.draw.rect(display, (250, 250, 250), (x, y, self.size, self.size))
-            pygame.draw.rect(display, (0, 0, 0), (x, y, self.size, self.size), 1)
+            pygame.draw.rect(display, RectColor, (x, y, self.size, self.size), 1)
             # 박스 안에 글자 쓰기
             text = self.font.render(str(puzzle[self.last[0]][self.last[1]]), True, (0, 0, 0))
             rect = text.get_rect()

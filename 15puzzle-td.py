@@ -160,7 +160,7 @@ display = pygame.display.set_mode(( Margin*2+HCells*CellSize,
 font = pygame.font.Font('freesansbold.ttf', CellSize//2-1)
 x, y = [], []
 shuffleCount = 5
-learning = 0.5
+learning = 0.9
 while not isQuit:
 	puzzle = Puzzle(puzzleCount+1, shuffleCount)
 	moveCount = 0

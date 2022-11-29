@@ -132,9 +132,9 @@ import os.path
 CPath = "15puzzle-deep5/cp_{0:06}.ckpt"
 Epochs = 3
 BatchSize = 64
-Alpha = 0.2
+Alpha = 0.7
 Gamma = 1.0
-LSize = 4096
+LSize = 2048
 
 gameCount = 0
 

@@ -169,7 +169,7 @@ def GetStatus(board):
 			s.append(0)
 		else:
 			n = nr*HCells+nc
-			tr, tc = board[n]//HCells, board[n]%HCells
+			tr, tc = (board[n]-1)//HCells, (board[n]-1)%HCells
 			s.append(tr-nr)
 			s.append(tc-nc)
 	return np.array(s)

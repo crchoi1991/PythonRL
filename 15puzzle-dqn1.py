@@ -3,10 +3,11 @@ import random
 import time
 import pygame
 from pygame.locals import *
+from collections import deque
 
 Margin = 10
 FPS = 30
-Actions = ( (0, -1), (0, 1), (-1, 0), (1, 0) )
+Actions = ( (0, -1), (-1, 0), (0, 1), (1, 0) )
 Width = 600
 Height = 400
 Delay = 1
@@ -121,10 +122,11 @@ import os.path
 
 CPath = "15puzzle-dqn1/cp_{0:06}.ckpt"
 Epochs = 3
-BatchSize = 64
-Alpha = 0.7
+BatchSize = 32
+Alpha = 0.3
 Gamma = 1.0
 LSize = 1024
+MiniBatch = 256
 
 gameCount = 0
 
@@ -184,14 +186,15 @@ display = pygame.display.set_mode(( Margin*2+HCells*CellSize,
 # 텍스트를 설정할 폰트 생성
 font = pygame.font.Font('freesansbold.ttf', CellSize//2-1)
 
-x, y = [], []
-shuffleCount = 4
+queue = deque(maxlen=LSize)
+shuffleCount = 3
 while not isQuit:
 	gameCount += 1
 	puzzle = Puzzle(gameCount, shuffleCount)
 	moveCount = 0
 	maxMoveCount = min(shuffleCount+5, 100)
 	epx, epv, epa = [], [], []
+	a = None
 	while moveCount <= maxMoveCount:
 		if puzzle.update() == False:
 			isQuit = True
@@ -199,7 +202,12 @@ while not isQuit:
 		st = GetStatus(puzzle.board)
 		if puzzle.check() == 0: break
 		v = model.predict(st.reshape(1, Cells), verbose=0)[0]
-		a = np.argmax(v)
+		if a:
+			p = v[(a+2)%4]
+			v[(a+2)%4] = -1
+			a = np.argmax(v)
+			v[(a+2)%4] = p
+		else: a = np.argmax(v)
 		epx.append(st)
 		epv.append(v)
 		epa.append(a)
@@ -217,11 +225,10 @@ while not isQuit:
 			v = epv[i]
 			a = epa[i]
 			v[a] += (dest-v[a])*Alpha
-			x.append(epx[i])
-			y.append(v)
-		if len(x) > LSize: x, y = x[-LSize:], y[-LSize:]
-		xx = np.array(x, dtype=float)
-		yy = np.array(y, dtype=float)
+			queue.append( (epx[i], v) )
+		rs = random.sample(queue, min(MiniBatch, len(queue)))
+		xx = np.array([rs[i][0] for i in range(len(rs))])
+		yy = np.array([rs[i][1] for i in range(len(rs))])
 		model.fit(xx, yy, epochs=Epochs, batch_size=BatchSize)
 		solveRate = solvedCount*100/puzzleCount
 		print(f"{solvedCount}/{puzzleCount} {solveRate:.1f}%")

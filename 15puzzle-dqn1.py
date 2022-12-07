@@ -163,8 +163,8 @@ def GetStatus(board):
 		(0, -1), (0, 1), (1, -1), (1, 0), (1, 1) )
 	s = []
 	for r, c in drc:
-		nr, nc = er+r, er+c
-		if nr < 0 or nr >= VCells or nc < 0 or nc >= VCells:
+		nr, nc = er+r, ec+c
+		if nr < 0 or nr >= VCells or nc < 0 or nc >= HCells:
 			s.append(0)
 			s.append(0)
 		else:

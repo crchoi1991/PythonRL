@@ -8,12 +8,10 @@ from collections import deque
 Margin = 10
 FPS = 30
 Actions = ( (0, -1), (-1, 0), (0, 1), (1, 0) )
-Width = 600
-Height = 400
 Delay = 1
 HCells, VCells = 4, 4
 Cells = HCells*VCells
-CellSize = min(Width//HCells, Height//VCells)
+CellSize = 100
 Black, White, Grey = (0, 0, 0), (250, 250, 250), (120, 120, 120)
 
 # puzzle class
@@ -55,7 +53,7 @@ class Puzzle:
 		d = Actions[a]
 		r, c = self.empty//HCells, self.empty%HCells
 		nr, nc = r+d[0], c+d[1]
-		if nr < 0 or nr >= HCells or nc < 0 or nc >= VCells: return
+		if nr < 0 or nr >= VCells or nc < 0 or nc >= HCells: return
 		self.last = self.empty
 		self.empty = nr*HCells+nc
 		self.board[self.last] = self.board[self.empty]
@@ -174,7 +172,7 @@ def GetStatus(board):
 			tr, tc = (board[n]-1)//HCells, (board[n]-1)%HCells
 			s.append(tr-nr)
 			s.append(tc-nc)
-	return np.array(s)
+	return s
 
 solvedCount, puzzleCount, maxSolvedMove = 0, 0, 0
 isQuit = False
@@ -194,23 +192,18 @@ while not isQuit:
 	moveCount = 0
 	maxMoveCount = min(shuffleCount+5, 100)
 	epx, epv, epa = [], [], []
-	a = None
 	while moveCount <= maxMoveCount:
 		if puzzle.update() == False:
 			isQuit = True
 			break
-		st = GetStatus(puzzle.board)
 		if puzzle.check() == 0: break
-		v = model.predict(st.reshape(1, Cells), verbose=0)[0]
-		if a:
-			p = v[(a+2)%4]
-			v[(a+2)%4] = -1
-			a = np.argmax(v)
-			v[(a+2)%4] = p
-		else: a = np.argmax(v)
-		epx.append(st)
-		epv.append(v)
-		epa.append(a)
+		st = GetStatus(puzzle.board)
+		v = model.predict(np.array(st).reshape(1, 16), verbose=0)[0]
+		a = np.argmax(v)
+		if st not in epx:
+			epx.append(st)
+			epv.append(v)
+			epa.append(a)
 		moveCount += 1
 		puzzle.action(a)
 		for _ in range(Delay): puzzle.draw()
@@ -229,14 +222,15 @@ while not isQuit:
 		rs = random.sample(queue, min(MiniBatch, len(queue)))
 		xx = np.array([rs[i][0] for i in range(len(rs))])
 		yy = np.array([rs[i][1] for i in range(len(rs))])
-		model.fit(xx, yy, epochs=Epochs, batch_size=BatchSize)
+		model.fit(xx, yy, epochs=Epochs, batch_size=BatchSize, 
+			verbose=0 if gameCount%20!=0 else 1)
 		solveRate = solvedCount*100/puzzleCount
-		print(f"{solvedCount}/{puzzleCount} {solveRate:.1f}%")
-		print(f"Moves : {moveCount}/{maxSolvedMove}")
+		print(f"{solvedCount}/{puzzleCount} {solveRate:.1f}%",
+			f"Moves : {moveCount}/{maxSolvedMove}")
 		if solveRate > 75.0 and puzzleCount >= 10:
 			solvedCount, puzzleCount = 0, 0
 			shuffleCount += 1
-		if gameCount%10 == 0: Save(model)
+		if gameCount%20 == 0: Save(model)
 	for _ in range(FPS): puzzle.draw()
 
 pygame.quit()

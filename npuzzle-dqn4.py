@@ -18,6 +18,7 @@ Delay = 1
 Cells = HCells*VCells
 CellSize = 100
 Black, White, Grey = (0, 0, 0), (250, 250, 250), (120, 120, 120)
+InitScores = [1, 1, 1, 0]*11
 
 # puzzle class
 class Puzzle:
@@ -194,6 +195,7 @@ font = pygame.font.Font('freesansbold.ttf', CellSize//2-1)
 
 queue = deque(maxlen=LSize)
 shuffleCount = 3
+scores = deque(InitScores, maxlen=50)
 while not isQuit:
 	gameCount += 1
 	puzzle = Puzzle(gameCount, shuffleCount)
@@ -222,6 +224,7 @@ while not isQuit:
 			solvedCount += 1
 			if maxSolvedMove < moveCount: maxSolvedMove = moveCount
 			dest = 1
+		scores.append(dest)
 		for i in range(len(epv)):
 			v = epv[i]
 			a = epa[i]
@@ -233,11 +236,12 @@ while not isQuit:
 		model.fit(xx, yy, epochs=Epochs, batch_size=BatchSize, 
 			verbose=0 if gameCount%20!=0 else 1)
 		solveRate = solvedCount*100/puzzleCount
-		print(f"{solvedCount}/{puzzleCount} {solveRate:.1f}%",
-			f"Moves : {moveCount}/{maxSolvedMove}")
-		if solveRate > 75.0 and puzzleCount >= 10:
-			solvedCount, puzzleCount = 0, 0
+		print(f"{solvedCount}/{puzzleCount} {solveRate:.2f}%",
+			f"Moves : {moveCount}/{maxSolvedMove} ({sum(scores)})")
+		if sum(scores) > 37:
+			scores = deque(InitScores, maxlen=50)
 			shuffleCount += 1
+			print(f"Shuffle Count to {shuffleCount}")
 		if gameCount%20 == 0: Save(model)
 	for _ in range(FPS): puzzle.draw()
 

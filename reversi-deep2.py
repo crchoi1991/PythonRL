@@ -182,8 +182,9 @@ class Game:
 		xarray = np.array(self.x)
 		yarray = np.array(self.y)
 		r = self.model.fit(xarray, yarray,
-						   epochs = self.epochs,
-						   batch_size = self.batch_size)
+				verbose=1 if self.gameCount%10==0 else 0,
+				epochs = self.epochs,
+				batch_size = self.batch_size)
 
 		# e-greedy에서 입실론 값을 업데이트 합니다.
 		if self.epsilon >= self.epsilonMin:
@@ -211,7 +212,8 @@ while not quitFlag:
 		if cmd == "qt":
 			w = game.onQuit(buf)
 			winlose[w] += 1
-			print(f"Wins: {winlose[2]}, Loses: {winlose[0]}, Draws: {winlose[1]}, {winlose[2]*100/(winlose[0]+winlose[1]+winlose[2]):.2f}%" )
+			print(f"Wins: {winlose[2]}, Loses: {winlose[0]},",
+				f"Draws: {winlose[1]}, {winlose[2]*100/(winlose[0]+winlose[1]+winlose[2]):.2f}%" )
 			break
 		if cmd == "ab":
 			print("Game Abort!!")

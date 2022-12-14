@@ -247,11 +247,12 @@ while not isQuit:
 		solveRate = solvedCount*100/puzzleCount
 		print(f"{solvedCount}/{puzzleCount} {solveRate:.2f}%",
 			f"Moves : {moveCount}/{maxSolvedMove} ({sum(scores)})")
-		if sum(scores) > 37:
-			scores = deque(InitScores, maxlen=50)
-			shuffleCount += 1
-			print(f"Shuffle Count to {shuffleCount}")
 		if gameCount%20 == 0: Save(model)
+		count = sum(scores)
+		if count < 25 or count > 37: 
+			scores = deque(InitScores, maxlen=50)
+			shuffleCount += 1 if count > 37 else -1
+			print(f"Shuffle Count to {shuffleCount}")
 	if isShow:
 		for _ in range(FPS): puzzle.draw()
 

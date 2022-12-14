@@ -14,16 +14,17 @@ if len(sys.argv) == 3:
 Margin = 10
 FPS = 30
 Actions = ( (0, -1), (-1, 0), (0, 1), (1, 0) )
-Delay = 1
+Delay = 10
 Cells = HCells*VCells
 CellSize = 100
 Black, White, Grey = (0, 0, 0), (250, 250, 250), (120, 120, 120)
+InitScores = [1, 1, 1, 0]*11
 
 # puzzle class
 class Puzzle:
 	def __init__(self, gameCount, shuffleCount):
 		# Set window caption
-		caption = f"DQN : Game {gameCount} shuffle {shuffleCount}"
+		caption = f"DQN5 : Game {gameCount} shuffle {shuffleCount}"
 		pygame.display.set_caption(caption)
 
 		# 퍼즐을 초기화합니다.
@@ -64,13 +65,6 @@ class Puzzle:
 		self.board[self.last] = self.board[self.empty]
 		self.board[self.empty] = Cells
 		self.alpha = 0.0
-
-	def update(self):
-		# 이벤트를 처리합니다.
-		for e in pygame.event.get():
-			if e.type == QUIT: return False
-			if e.type == KEYUP and e.key == K_ESCAPE: return False
-		return True
 
 	# 그림을 그립니다.
 	def draw(self):
@@ -123,12 +117,12 @@ import tensorflow as tf
 from tensorflow import keras
 import os.path
 
-CPath = "npuzzle-dqn2/cp_{0:06}.ckpt"
+CPath = "npuzzle-dqn5/cp_{0:06}.ckpt"
 Epochs = 3
-BatchSize = 32
+BatchSize = 64
 Alpha = 0.3
 Gamma = 1.0
-LSize = 1024
+LSize = 2048
 MiniBatch = 256
 
 gameCount = 0
@@ -136,8 +130,9 @@ gameCount = 0
 def BuildModel():
 	global gameCount
 	model = keras.Sequential([
-		keras.layers.Dense(32, input_dim=16, activation='relu'),
-		keras.layers.Dense(64, activation='relu'),
+		keras.layers.Dense(128, input_dim=60, activation='relu'),
+		keras.layers.Dense(256, activation='relu'),
+		keras.layers.Dense(128, activation='relu'),
 		keras.layers.Dense(4, activation='sigmoid')
 	])
 	model.compile(loss='mean_squared_error',
@@ -165,22 +160,37 @@ def GetStatus(board):
 		if board[i]==Cells: empty = i
 	er, ec = empty//HCells, empty%HCells
 	drc = ( (-1, -1), (-1, 0), (-1, 1),
-		(0, -1), (0, 1), (1, -1), (1, 0), (1, 1) )
+		(0, -1), (0, 1), 
+		(1, -1), (1, 0), (1, 1),
+		(-2, -1), (-2, 0), (-2, 1),
+		(-1, -2), (0, -2), (1, 2),
+		(-1, 2), (0, 2), (1, 2),
+		(2, -1), (2, 0), (2, 1) )
 	s = []
 	for r, c in drc:
 		nr, nc = er+r, ec+c
 		if nr < 0 or nr >= VCells or nc < 0 or nc >= HCells:
 			s.append(0)
 			s.append(0)
+			s.append(0)
 		else:
 			n = nr*HCells+nc
 			tr, tc = (board[n]-1)//HCells, (board[n]-1)%HCells
+			s.append(1)
 			s.append(tr-nr)
 			s.append(tc-nc)
 	return s
 
+def GetEvent():
+	# 이벤트를 처리합니다.
+	for e in pygame.event.get():
+		if e.type == QUIT: return 1
+		if e.type == KEYUP and e.key == K_ESCAPE: return 1
+		if e.type == KEYUP and e.key == K_x: return 2
+	return 0
+
 solvedCount, puzzleCount, maxSolvedMove = 0, 0, 0
-isQuit = False
+isQuit, isShow = False, True
 model = BuildModel()
 pygame.init()
 # 그림을 그릴 디스플레이를 설정합니다.
@@ -191,19 +201,22 @@ font = pygame.font.Font('freesansbold.ttf', CellSize//2-1)
 
 queue = deque(maxlen=LSize)
 shuffleCount = 3
+scores = deque(InitScores, maxlen=50)
 while not isQuit:
 	gameCount += 1
 	puzzle = Puzzle(gameCount, shuffleCount)
 	moveCount = 0
-	maxMoveCount = min(shuffleCount+5, 100)
+	maxMoveCount = min(shuffleCount+1, 100)
 	epx, epv, epa = [], [], []
 	while moveCount <= maxMoveCount:
-		if puzzle.update() == False:
+		ev = GetEvent()
+		if ev == 1:
 			isQuit = True
 			break
+		if ev == 2: isShow = not isShow
 		if puzzle.check() == 0: break
 		st = GetStatus(puzzle.board)
-		v = model.predict(np.array(st).reshape(1, 16), verbose=0)[0]
+		v = model.predict(np.array(st).reshape(1, 60), verbose=0)[0]
 		a = np.argmax(v)
 		if st not in epx:
 			epx.append(st)
@@ -211,7 +224,8 @@ while not isQuit:
 			epa.append(a)
 		moveCount += 1
 		puzzle.action(a)
-		for _ in range(Delay): puzzle.draw()
+		if isShow:
+			for _ in range(Delay): puzzle.draw()
 	if not isQuit:
 		puzzleCount += 1
 		dest = 0
@@ -219,6 +233,7 @@ while not isQuit:
 			solvedCount += 1
 			if maxSolvedMove < moveCount: maxSolvedMove = moveCount
 			dest = 1
+		scores.append(dest)
 		for i in range(len(epv)):
 			v = epv[i]
 			a = epa[i]
@@ -230,13 +245,15 @@ while not isQuit:
 		model.fit(xx, yy, epochs=Epochs, batch_size=BatchSize, 
 			verbose=0 if gameCount%20!=0 else 1)
 		solveRate = solvedCount*100/puzzleCount
-		print(f"{solvedCount}/{puzzleCount} {solveRate:.1f}%",
-			f"Moves : {moveCount}/{maxSolvedMove}")
-		if solveRate > 75.0 and puzzleCount >= 10:
-			solvedCount, puzzleCount = 0, 0
+		print(f"{solvedCount}/{puzzleCount} {solveRate:.2f}%",
+			f"Moves : {moveCount}/{maxSolvedMove} ({sum(scores)})")
+		if sum(scores) > 37:
+			scores = deque(InitScores, maxlen=50)
 			shuffleCount += 1
+			print(f"Shuffle Count to {shuffleCount}")
 		if gameCount%20 == 0: Save(model)
-	for _ in range(FPS): puzzle.draw()
+	if isShow:
+		for _ in range(FPS): puzzle.draw()
 
 pygame.quit()
 

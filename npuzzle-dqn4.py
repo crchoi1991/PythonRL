@@ -126,10 +126,10 @@ import os.path
 
 CPath = "npuzzle-dqn4/cp_{0:06}.ckpt"
 Epochs = 3
-BatchSize = 32
+BatchSize = 64
 Alpha = 0.3
 Gamma = 1.0
-LSize = 1024
+LSize = 2048
 MiniBatch = 256
 
 gameCount = 0

@@ -238,6 +238,10 @@ while not isQuit:
 			v = epv[i]
 			a = epa[i]
 			v[a] += (dest-v[a])*Alpha
+			for xx, yy in queue:
+				if xx == epx[i]:
+					queue.remove((xx, yy))
+					break
 			queue.append( (epx[i], v) )
 		rs = random.sample(queue, min(MiniBatch, len(queue)))
 		xx = np.array([rs[i][0] for i in range(len(rs))])

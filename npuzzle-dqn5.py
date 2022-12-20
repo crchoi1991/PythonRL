@@ -117,7 +117,7 @@ import tensorflow as tf
 from tensorflow import keras
 import os.path
 
-CPath = "npuzzle-dqn5/cp_{0:06}.ckpt"
+CPath = "npuzzle-dqn5/cp_{0:07}.ckpt"
 Epochs = 3
 BatchSize = 64
 Alpha = 0.3
@@ -147,7 +147,7 @@ def BuildModel():
 		# 현재 인공신경망 모델에 저장된 웨이트를 로드합니다.
 		model.load_weights(latest)
 		idx = latest.find("cp_")
-		gameCount = int(latest[idx+3:idx+9])
+		gameCount = int(latest[idx+3:idx+10])
 	return model
 
 def Save(model):

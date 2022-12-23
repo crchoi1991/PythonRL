@@ -122,8 +122,8 @@ Epochs = 3
 BatchSize = 64
 Alpha = 0.3
 Gamma = 1.0
-LSize = 2048
-MiniBatch = 256
+LSize = 4096
+MiniBatch = 512
 
 gameCount = 0
 

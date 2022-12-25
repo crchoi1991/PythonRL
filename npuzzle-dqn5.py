@@ -19,6 +19,7 @@ Cells = HCells*VCells
 CellSize = 100
 Black, White, Grey = (0, 0, 0), (250, 250, 250), (120, 120, 120)
 InitScores = [1, 1, 1, 0]*11
+MaxMoveCount = (VCells*HCells**2+HCells*VCells**2)//2
 
 # puzzle class
 class Puzzle:
@@ -200,13 +201,13 @@ display = pygame.display.set_mode(( Margin*2+HCells*CellSize,
 font = pygame.font.Font('freesansbold.ttf', CellSize//2-1)
 
 queue = deque(maxlen=LSize)
-shuffleCount = 3
+shuffleCount = 100
 scores = deque(InitScores, maxlen=50)
 while not isQuit:
 	gameCount += 1
 	puzzle = Puzzle(gameCount, shuffleCount)
 	moveCount = 0
-	maxMoveCount = min(shuffleCount+1, 100)
+	maxMoveCount = min(shuffleCount+1, MaxMoveCount)
 	epx, epv, epa = [], [], []
 	while moveCount <= maxMoveCount:
 		ev = GetEvent()

@@ -95,7 +95,6 @@ class Game:
         self.send("%04d pt %4d"%(8, p))
         self.episode.append((st, self.turn^3))
         self.episode.append((nst, self.turn))
-        print("(%d, %d)"%(p/8, p%8), end="")
         return True
 
 quitFlag = False

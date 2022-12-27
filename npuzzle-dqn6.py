@@ -18,7 +18,7 @@ Delay = 10
 Cells = HCells*VCells
 CellSize = 100
 Black, White, Grey = (0, 0, 0), (250, 250, 250), (120, 120, 120)
-InitScores = [1, 1, 1, 0]*11
+InitScores = [1, 1, 1, 0]*10
 MaxMoveCount = (VCells*HCells**2+HCells*VCells**2)//2
 
 # puzzle class
@@ -118,26 +118,33 @@ import tensorflow as tf
 from tensorflow import keras
 import os.path
 
-CPath = "npuzzle-dqn5/cp_{0:07}.ckpt"
+CPath = "npuzzle-dqn6/cp_{0:07}.ckpt"
 Epochs = 3
 BatchSize = 64
 Alpha = 0.3
 Gamma = 1.0
-LSize = 4096
+LSize = 8192
 MiniBatch = 512
+Neighbors = ( (-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1),
+		(-2, -1), (-2, 0), (-2, 1),
+		(-1, -2), (0, -2), (1, 2),
+		(-1, 2), (0, 2), (1, 2),
+		(2, -1), (2, 0), (2, 1),
+		(-2, -2), (-2, 2), (2, 2), (2, -2),
+		(-3, 0), (0, -3), (3, 0), (0, 3) )
+InputSize = len(Neighbors)*3
 
 gameCount = 0
 
 def BuildModel():
 	global gameCount
 	model = keras.Sequential([
-		keras.layers.Dense(128, input_dim=60, activation='relu'),
+		keras.layers.Dense(256, input_dim=InputSize, activation='relu'),
+		keras.layers.Dense(512, activation='relu'),
 		keras.layers.Dense(256, activation='relu'),
-		keras.layers.Dense(128, activation='relu'),
 		keras.layers.Dense(4, activation='sigmoid')
 	])
-	model.compile(loss='mean_squared_error',
-		optimizer=keras.optimizers.Adam())
+	model.compile(loss='mean_squared_error', optimizer=keras.optimizers.Adam())
 		
 	# 학습한 데이터를 읽어서 모델에 적용합니다.
 	dir = os.path.dirname(CPath)
@@ -160,15 +167,8 @@ def GetStatus(board):
 	for i in range(Cells):
 		if board[i]==Cells: empty = i
 	er, ec = empty//HCells, empty%HCells
-	drc = ( (-1, -1), (-1, 0), (-1, 1),
-		(0, -1), (0, 1), 
-		(1, -1), (1, 0), (1, 1),
-		(-2, -1), (-2, 0), (-2, 1),
-		(-1, -2), (0, -2), (1, 2),
-		(-1, 2), (0, 2), (1, 2),
-		(2, -1), (2, 0), (2, 1) )
 	s = []
-	for r, c in drc:
+	for r, c in Neighbors:
 		nr, nc = er+r, ec+c
 		if nr < 0 or nr >= VCells or nc < 0 or nc >= HCells:
 			s.append(0)
@@ -217,7 +217,7 @@ while not isQuit:
 		if ev == 2: isShow = not isShow
 		if puzzle.check() == 0: break
 		st = GetStatus(puzzle.board)
-		v = model.predict(np.array(st).reshape(1, 60), verbose=0)[0]
+		v = model.predict(np.array([st]), verbose=0)[0]
 		a = np.argmax(v)
 		if st not in epx:
 			epx.append(st)
@@ -248,11 +248,11 @@ while not isQuit:
 		xx = np.array([rs[i][0] for i in range(len(rs))])
 		yy = np.array([rs[i][1] for i in range(len(rs))])
 		model.fit(xx, yy, epochs=Epochs, batch_size=BatchSize, 
-			verbose=0 if gameCount%20!=0 else 1)
+			verbose=0 if gameCount%50!=0 else 1)
 		solveRate = solvedCount*100/puzzleCount
 		print(f"{solvedCount}/{puzzleCount} {solveRate:.2f}%",
 			f"Moves : {moveCount}/{maxSolvedMove} ({sum(scores)})")
-		if gameCount%20 == 0: Save(model)
+		if gameCount%50 == 0: Save(model)
 		count = sum(scores)
 		if count < 25 or count > 37: 
 			scores = deque(InitScores, maxlen=50)

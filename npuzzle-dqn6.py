@@ -5,6 +5,7 @@ import pygame
 from pygame.locals import *
 from collections import deque
 import sys
+import math
 
 HCells, VCells = 4, 4
 if len(sys.argv) == 3:
@@ -25,7 +26,7 @@ MaxMoveCount = (VCells*HCells**2+HCells*VCells**2)//2
 class Puzzle:
 	def __init__(self, gameCount, shuffleCount):
 		# Set window caption
-		caption = f"DQN5 : Game {gameCount} shuffle {shuffleCount}"
+		caption = f"DQN6 : Game {gameCount} shuffle {shuffleCount}"
 		pygame.display.set_caption(caption)
 
 		# 퍼즐을 초기화합니다.
@@ -190,6 +191,12 @@ def GetEvent():
 		if e.type == KEYUP and e.key == K_x: return 2
 	return 0
 
+def Normalize(v):
+	s = 0.00001
+	for k in v: s += k**2
+	s = math.sqrt(s)
+	for i in range(len(v)): v[i] /= s
+
 solvedCount, puzzleCount, maxSolvedMove = 0, 0, 0
 isQuit, isShow = False, True
 model = BuildModel()
@@ -239,6 +246,7 @@ while not isQuit:
 			v = epv[i]
 			a = epa[i]
 			v[a] += (dest-v[a])*Alpha
+			Normalize(v)
 			for xx, yy in queue:
 				if xx == epx[i]:
 					queue.remove((xx, yy))

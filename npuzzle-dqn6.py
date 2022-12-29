@@ -246,7 +246,7 @@ while not isQuit:
 			v = epv[i]
 			a = epa[i]
 			v[a] += (dest-v[a])*Alpha
-			Normalize(v)
+			#Normalize(v)
 			for xx, yy in queue:
 				if xx == epx[i]:
 					queue.remove((xx, yy))

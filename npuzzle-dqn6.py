@@ -6,6 +6,7 @@ from pygame.locals import *
 from collections import deque
 import sys
 import math
+import matplotlib.pyplot as plt
 
 HCells, VCells = 4, 4
 if len(sys.argv) == 3:
@@ -210,6 +211,11 @@ font = pygame.font.Font('freesansbold.ttf', CellSize//2-1)
 queue = deque(maxlen=LSize)
 shuffleCount = 100
 scores = deque(InitScores, maxlen=50)
+meanMoves = deque(maxlen=1000)
+movePlot = deque(maxlen=100)
+_, ax = plt.subplots()
+plt.style.use(['bmh'])
+plt.ion()
 while not isQuit:
 	gameCount += 1
 	puzzle = Puzzle(gameCount, shuffleCount)
@@ -241,6 +247,13 @@ while not isQuit:
 			solvedCount += 1
 			if maxSolvedMove < moveCount: maxSolvedMove = moveCount
 			dest = 1
+			meanMoves.append(moveCount)
+			if solvedCount%10 == 0:
+				movePlot.append(sum(meanMoves)/len(meanMoves))
+				ax.clear()
+				plt.title('moves graph')
+				ax.plot(movePlot, 'b-')
+				plt.show()
 		scores.append(dest)
 		for i in range(len(epv)):
 			v = epv[i]

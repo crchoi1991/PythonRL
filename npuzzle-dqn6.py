@@ -215,7 +215,6 @@ meanMoves = deque(maxlen=1000)
 movePlot = deque(maxlen=200)
 _, ax = plt.subplots()
 plt.style.use(['bmh'])
-plt.ion()
 while not isQuit:
 	gameCount += 1
 	puzzle = Puzzle(gameCount, shuffleCount)
@@ -253,7 +252,7 @@ while not isQuit:
 				ax.clear()
 				plt.title('moves graph')
 				ax.plot(movePlot, 'b-')
-				plt.show()
+				plt.pause(0.01)
 		scores.append(dest)
 		for i in range(len(epv)):
 			v = epv[i]

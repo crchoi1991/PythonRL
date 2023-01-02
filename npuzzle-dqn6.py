@@ -212,7 +212,7 @@ queue = deque(maxlen=LSize)
 shuffleCount = 100
 scores = deque(InitScores, maxlen=50)
 meanMoves = deque(maxlen=1000)
-movePlot = deque(maxlen=100)
+movePlot = deque(maxlen=200)
 _, ax = plt.subplots()
 plt.style.use(['bmh'])
 plt.ion()
@@ -248,7 +248,7 @@ while not isQuit:
 			if maxSolvedMove < moveCount: maxSolvedMove = moveCount
 			dest = 1
 			meanMoves.append(moveCount)
-			if solvedCount%10 == 0:
+			if solvedCount%20 == 0:
 				movePlot.append(sum(meanMoves)/len(meanMoves))
 				ax.clear()
 				plt.title('moves graph')

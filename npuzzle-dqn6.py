@@ -213,7 +213,10 @@ shuffleCount = 100
 scores = deque(InitScores, maxlen=50)
 meanMoves = deque(maxlen=1000)
 movePlot = deque(maxlen=200)
+shufflePlot = deque(maxlen=200)
+indexPlot = deque(maxlen=200)
 _, ax = plt.subplots()
+axr = ax.twinx()
 plt.style.use(['bmh'])
 while not isQuit:
 	gameCount += 1
@@ -249,9 +252,13 @@ while not isQuit:
 			meanMoves.append(moveCount)
 			if solvedCount%20 == 0:
 				movePlot.append(sum(meanMoves)/len(meanMoves))
+				shufflePlot.append(shuffleCount)
+				indexPlot.append(gameCount)
 				ax.clear()
+				axr.clear()
 				plt.title('moves graph')
-				ax.plot(movePlot, 'b-')
+				ax.plot(indexPlot, movePlot, 'b-')
+				axr.plot(indexPlot, shufflePlot, 'k--')
 				plt.pause(0.01)
 		scores.append(dest)
 		for i in range(len(epv)):

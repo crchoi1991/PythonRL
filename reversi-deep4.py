@@ -7,7 +7,7 @@ from tensorflow import keras
 import os.path
 from collections import deque
 
-MaxSize = 2048
+MaxSize = 4096
 MiniBatch = 256
 
 class Game:
@@ -18,8 +18,8 @@ class Game:
 		self.gameCount = 0
 
 		# 머신러닝을 위한 파라미터들
-		self.epochs = 8
-		self.batch_size = 32
+		self.epochs = 3
+		self.batch_size = 64
 
 		# 강화학습을 위한 파라미터들
 		self.alpha = 0.2		# 학습률
@@ -82,10 +82,6 @@ class Game:
 		except:
 			print("Sending error")
 
-	def getStatus(turn, board):
-		ref = (0.0, (turn==1)*2-1.0, (turn==2)*2-1.0, 0.0)
-		return [ref[int(board[i])] for i in range(64)]
-
 	def preRun(self, p):
 		try:
 			self.send("%04d pr %04d"%(8, p))
@@ -93,7 +89,7 @@ class Game:
 			return False, None
 		cmd, buf = self.recv()
 		if cmd != "pr": return False, None
-		return True, Game.getStatus(self.turn, buf)
+		return True, getStatus(buf)
 
 	def onStart(self, buf):
 		self.turn = int(buf)
@@ -108,13 +104,13 @@ class Game:
 		result = win+1 if self.turn == 1 else 1-win
 		winText = ("Lose", "Draw", "Win")
 		print(f"{winText[result]} W : {w}, B : {b}")
-		# 최종 보상을 선택 : 1 : 이겼다, 0 : 졌다, 0.5 : 비겼을 경우
-		reward = result-1
+		# 최종 보상을 선택 : 1 : White win, -1 : Black win, 0 : Draw
+		reward = win
 		# 에피소드를 거꾸로 거슬러 올라가야한다.
 		for st, v, nst, nv in self.episode[::-1]:
 			rw = (1-self.alpha)*nv + self.alpha*reward
 			self.q.append( (nst, rw) )
-			rw = (1-self.alpha)*v + self.alpha*reward*-1
+			rw = (1-self.alpha)*v + self.alpha*-reward
 			self.q.append( (st, rw) )
 			reward *= self.gamma
 		# 에피소드값을 이용하여 리플레이를 하도록 합니다.
@@ -131,7 +127,7 @@ class Game:
 	def action(self, board):
 		# hints : 이번턴에서 놓을 수 있는 자리
 		hints = [i for i in range(64) if board[i] == "0"]
-		st = Game.getStatus(self.turn, board)
+		st = getStatus(board)
 		v = self.model.predict(np.array(st).reshape(1,64),verbose=0)[0,0]
 
 		# e-greedy에 의해 입실론값 확률로 랜덤하게 선택
@@ -198,6 +194,10 @@ class Game:
 		print(f"Save weights {saveFile}")
 		self.model.save_weights(saveFile)
 		
+def getStatus(board):
+	ref = (0.0, 1.0, -1.0, 0.0)
+	return [ref[int(board[i])] for i in range(64)]
+
 quitFlag = False
 winlose = [0, 0, 0]
 game = Game()

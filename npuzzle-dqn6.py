@@ -253,7 +253,7 @@ while not isQuit:
 			if solvedCount%20 == 0:
 				movePlot.append(sum(meanMoves)/len(meanMoves))
 				shufflePlot.append(shuffleCount)
-				indexPlot.append(gameCount)
+				indexPlot.append(gameCount/1000)
 				ax.clear()
 				axr.clear()
 				plt.title('moves graph')

@@ -137,12 +137,13 @@ class Game:
 			return st, v, nst, nv, p
 
 		# 놓을 수 있는 자리 중 가장 높은 값을 주는 것을 선택
-		maxp, maxnst, maxv = -1, None, -100
+		maxp, maxnst, maxv = -1, None, -100 if self.turn == 1 else 100
 		for h in hints:
 			ret, nst = self.preRun(h)
 			if not ret: return None, -1, 0
 			nv = self.model.predict(np.array(nst).reshape(1,64),verbose=0)[0,0]
-			if nv > maxv: maxp, maxnst, maxv = h, nst, nv
+			if (self.turn == 1 and nv > maxv) or (self.turn == 2 and nv < maxv): 
+				maxp, maxnst, maxv = h, nst, nv
 		return st, v, nst, maxv, maxp
 
 	# 인공신경망 모델을 생성합니다.

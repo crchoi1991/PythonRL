@@ -125,7 +125,7 @@ Epochs = 3
 BatchSize = 64
 Alpha = 0.3
 Gamma = 1.0
-LSize = 8192
+LSize = 10000
 MiniBatch = 512
 Neighbors = ( (-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1),
 		(-2, -1), (-2, 0), (-2, 1),
@@ -190,6 +190,7 @@ def GetEvent():
 		if e.type == QUIT: return 1
 		if e.type == KEYUP and e.key == K_ESCAPE: return 1
 		if e.type == KEYUP and e.key == K_x: return 2
+		if e.type == KEYUP and e.key == K_z: return 3
 	return 0
 
 def Normalize(v):
@@ -199,7 +200,7 @@ def Normalize(v):
 	for i in range(len(v)): v[i] /= s
 
 solvedCount, puzzleCount, maxSolvedMove = 0, 0, 0
-isQuit, isShow = False, True
+isQuit, isShow, isShowGraph = False, True, True
 model = BuildModel()
 pygame.init()
 # 그림을 그릴 디스플레이를 설정합니다.
@@ -230,6 +231,7 @@ while not isQuit:
 			isQuit = True
 			break
 		if ev == 2: isShow = not isShow
+		if ev == 3: isShowGraph = not isShowGraph
 		if puzzle.check() == 0: break
 		st = GetStatus(puzzle.board)
 		v = model.predict(np.array([st]), verbose=0)[0]
@@ -259,7 +261,7 @@ while not isQuit:
 				plt.title('moves graph')
 				ax.plot(indexPlot, movePlot, 'b-')
 				axr.plot(indexPlot, shufflePlot, 'k--')
-				plt.pause(0.01)
+				if isShowGraph: plt.pause(0.01)
 		scores.append(dest)
 		for i in range(len(epv)):
 			v = epv[i]

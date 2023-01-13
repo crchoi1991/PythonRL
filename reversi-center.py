@@ -99,6 +99,7 @@ def FlipTiles(p):
 		for t in flips:
 			cx, cy = GetCenter(t)
 			pygame.draw.circle(displaySurf, color, (cx, cy), HalfSpace-3)
+		DrawInfo()
 		pygame.display.update()
 		time.sleep(1/FPS)	   # 1/FPS초동안 아무것도 안하고 쉬기
 	for t in flips: board[t] = turn

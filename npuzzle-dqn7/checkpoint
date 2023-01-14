@@ -1,7 +1,2 @@
-<<<<<<< HEAD
-model_checkpoint_path: "cp_0139050.ckpt"
-all_model_checkpoint_paths: "cp_0139050.ckpt"
-=======
-model_checkpoint_path: "cp_0122700.ckpt"
-all_model_checkpoint_paths: "cp_0122700.ckpt"
->>>>>>> 5e3afc8024ae8d22fa24ce30cf31a2324f4c78c6
+model_checkpoint_path: "cp_0139100.ckpt"
+all_model_checkpoint_paths: "cp_0139100.ckpt"

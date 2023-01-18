@@ -22,6 +22,7 @@ CellSize = 100
 Black, White, Grey = (0, 0, 0), (250, 250, 250), (120, 120, 120)
 InitScores = [1, 1, 1, 0]*10
 MaxMoveCount = (VCells*HCells**2+HCells*VCells**2)//2
+PlotRange, PlotInt = 400, 50
 
 # puzzle class
 class Puzzle:
@@ -217,9 +218,9 @@ queue = deque(maxlen=LSize)
 shuffleCount = 100
 scores = deque(InitScores, maxlen=50)
 meanMoves = deque(maxlen=1000)
-movePlot = deque(maxlen=200)
-shufflePlot = deque(maxlen=200)
-indexPlot = deque(maxlen=200)
+movePlot = deque(maxlen=PlotRange)
+shufflePlot = deque(maxlen=PlotRange)
+indexPlot = deque(maxlen=PlotRange)
 _, ax = plt.subplots()
 axr = ax.twinx()
 plt.style.use(['bmh'])
@@ -256,7 +257,7 @@ while not isQuit:
 			if maxSolvedMove < moveCount: maxSolvedMove = moveCount
 			dest = 1
 			meanMoves.append(moveCount)
-			if solvedCount%20 == 0:
+			if solvedCount%PlotInt == 0:
 				movePlot.append(sum(meanMoves)/len(meanMoves))
 				shufflePlot.append(shuffleCount)
 				indexPlot.append(gameCount/1000)

@@ -126,8 +126,8 @@ Epochs = 3
 BatchSize = 64
 Alpha = 0.3
 Gamma = 1.0
-LSize = 12000
-MiniBatch = 512
+LSize = 15000
+MiniBatch = 1024
 Neighbors = ( (-1, -1), (-1, 0), (-1, 1), 
 		(0, -1), (0, 1), 
 		(1, -1), (1, 0), (1, 1),

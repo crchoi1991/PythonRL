@@ -22,7 +22,7 @@ CellSize = 100
 Black, White, Grey = (0, 0, 0), (250, 250, 250), (120, 120, 120)
 InitScores = [1, 1, 1, 0]*10
 MaxMoveCount = (VCells*HCells**2+HCells*VCells**2)//2
-PlotRange, PlotInt = 400, 50
+PlotRange, PlotInt = 200, 50
 
 # puzzle class
 class Puzzle:
@@ -127,7 +127,7 @@ BatchSize = 64
 Alpha = 0.3
 Gamma = 1.0
 LSize = 15000
-MiniBatch = 1024
+MiniBatch = 512
 Neighbors = ( (-1, -1), (-1, 0), (-1, 1), 
 		(0, -1), (0, 1), 
 		(1, -1), (1, 0), (1, 1),
@@ -217,7 +217,7 @@ font = pygame.font.Font('freesansbold.ttf', CellSize//2-1)
 queue = deque(maxlen=LSize)
 shuffleCount = 100
 scores = deque(InitScores, maxlen=50)
-meanMoves = deque(maxlen=1000)
+meanMoves = deque(maxlen=PlotInt*20)
 movePlot = deque(maxlen=PlotRange)
 shufflePlot = deque(maxlen=PlotRange)
 indexPlot = deque(maxlen=PlotRange)

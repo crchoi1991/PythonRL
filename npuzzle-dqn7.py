@@ -221,7 +221,7 @@ meanMoves = deque(maxlen=PlotInt*20)
 movePlot = deque(maxlen=PlotRange)
 shufflePlot = deque(maxlen=PlotRange)
 indexPlot = deque(maxlen=PlotRange)
-_, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=(7, 4))
 axr = ax.twinx()
 plt.style.use(['bmh'])
 while not isQuit:
@@ -257,13 +257,14 @@ while not isQuit:
 			if maxSolvedMove < moveCount: maxSolvedMove = moveCount
 			dest = 1
 			meanMoves.append(moveCount)
+			plt.get_current_fig_manager().set_window_title(
+				f'move graph {solvedCount} {isShowGraph}')
 			if solvedCount%PlotInt == 0:
 				movePlot.append(sum(meanMoves)/len(meanMoves))
 				shufflePlot.append(shuffleCount)
 				indexPlot.append(gameCount/1000)
 				ax.clear()
 				axr.clear()
-				plt.title('moves graph')
 				ax.plot(indexPlot, movePlot, 'b-')
 				axr.plot(indexPlot, shufflePlot, 'k--')
 				if isShowGraph: plt.pause(0.01)

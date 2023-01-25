@@ -21,8 +21,8 @@ Cells = HCells*VCells
 CellSize = 100
 Black, White, Grey = (0, 0, 0), (250, 250, 250), (120, 120, 120)
 InitScores = [1, 1, 1, 0]*10
-MaxMoveCount = (VCells*HCells**2+HCells*VCells**2)//2
-PlotRange, PlotInt = 200, 50
+MaxMoveCount = VCells*HCells**2+HCells*VCells**2
+PlotRange, PlotInt = 200, 100
 
 # puzzle class
 class Puzzle:
@@ -124,10 +124,10 @@ import os.path
 CPath = "npuzzle-dqn8/cp_{0:07}.ckpt"
 Epochs = 3
 BatchSize = 64
-Alpha = 0.3
+Alpha = 0.4
 Gamma = 1.0
-LSize = 20000
-MiniBatch = 512
+LSize = 10000
+MiniBatch = 1024
 Neighbors = ( (-1, -1), (-1, 0), (-1, 1), 
 		(0, -1), (0, 1), 
 		(1, -1), (1, 0), (1, 1),
@@ -221,14 +221,14 @@ meanMoves = deque(maxlen=PlotInt*20)
 movePlot = deque(maxlen=PlotRange)
 shufflePlot = deque(maxlen=PlotRange)
 indexPlot = deque(maxlen=PlotRange)
-fig, ax = plt.subplots(figsize=(7, 4))
+fig, ax = plt.subplots(figsize=(6.5, 3.8))
 axr = ax.twinx()
 plt.style.use(['bmh'])
 while not isQuit:
 	gameCount += 1
 	puzzle = Puzzle(gameCount, shuffleCount)
 	moveCount = 0
-	maxMoveCount = min(shuffleCount+1, MaxMoveCount)
+	maxMoveCount = min(shuffleCount+10, MaxMoveCount)
 	epx, epv, epa = [], [], []
 	while moveCount <= maxMoveCount:
 		ev = GetEvent()
@@ -241,7 +241,9 @@ while not isQuit:
 		st = GetStatus(puzzle.board)
 		v = model.predict(np.array([st]), verbose=0)[0]
 		a = np.argmax(v)
-		if st not in epx:
+		if st in epx:
+			moveCount = maxMoveCount
+		else:
 			epx.append(st)
 			epv.append(v)
 			epa.append(a)
@@ -267,6 +269,7 @@ while not isQuit:
 				axr.clear()
 				ax.plot(indexPlot, movePlot, 'b-')
 				axr.plot(indexPlot, shufflePlot, 'k--')
+				plt.tight_layout(pad=0.5)
 				if isShowGraph: plt.pause(0.01)
 		scores.append(dest)
 		for i in range(len(epv)):
@@ -289,7 +292,7 @@ while not isQuit:
 			f"Moves : {moveCount}/{maxSolvedMove} ({sum(scores)})")
 		if gameCount%50 == 0: Save(model)
 		count = sum(scores)
-		if count < 25 or count > 37: 
+		if count < 25 or count > 39: 
 			scores = deque(InitScores, maxlen=50)
 			shuffleCount += 1 if count > 37 else -1
 			print(f"Shuffle Count to {shuffleCount}")

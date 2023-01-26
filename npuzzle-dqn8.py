@@ -123,11 +123,11 @@ import os.path
 
 CPath = "npuzzle-dqn8/cp_{0:07}.ckpt"
 Epochs = 3
-BatchSize = 64
+BatchSize = 32
 Alpha = 0.4
 Gamma = 1.0
 LSize = 10000
-MiniBatch = 1024
+MiniBatch = 256
 Neighbors = ( (-1, -1), (-1, 0), (-1, 1), 
 		(0, -1), (0, 1), 
 		(1, -1), (1, 0), (1, 1),

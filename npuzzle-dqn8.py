@@ -126,8 +126,8 @@ Epochs = 3
 BatchSize = 32
 Alpha = 0.4
 Gamma = 1.0
-LSize = 10000
-MiniBatch = 256
+LSize = 20000
+MiniBatch = 384
 Neighbors = ( (-1, -1), (-1, 0), (-1, 1), 
 		(0, -1), (0, 1), 
 		(1, -1), (1, 0), (1, 1),
@@ -292,7 +292,7 @@ while not isQuit:
 			f"Moves : {moveCount}/{maxSolvedMove} ({sum(scores)})")
 		if gameCount%50 == 0: Save(model)
 		count = sum(scores)
-		if count < 25 or count > 39: 
+		if count < 25 or count > 41: 
 			scores = deque(InitScores, maxlen=50)
 			shuffleCount += 1 if count > 37 else -1
 			print(f"Shuffle Count to {shuffleCount}")

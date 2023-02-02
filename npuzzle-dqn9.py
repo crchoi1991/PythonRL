@@ -21,7 +21,7 @@ Cells = HCells*VCells
 CellSize = 100
 Black, White, Grey = (0, 0, 0), (250, 250, 250), (120, 120, 120)
 InitScores = [1, 1, 1, 0]*10
-MaxMoveCount = VCells*HCells**2+HCells*VCells**2
+MaxMoveCount = (VCells*HCells**2+HCells*VCells**2)//2+10
 PlotRange, PlotInt = 200, 100
 
 # puzzle class

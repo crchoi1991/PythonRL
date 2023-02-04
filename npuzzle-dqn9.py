@@ -124,8 +124,8 @@ import os.path
 CPath = "npuzzle-dqn9/cp_{0:07}.ckpt"
 Epochs = 3
 BatchSize = 32
-Alpha = 0.4
-Gamma = 1.0
+Alpha = 0.9
+Gamma = 0.97
 LSize = 20000
 MiniBatch = 384
 Neighbors = ( (-1, -1), (-1, 0), (-1, 1), 
@@ -199,9 +199,7 @@ def GetEvent():
 	return 0
 
 def Normalize(v):
-	s = 0.00001
-	for k in v: s += k**2
-	s = math.sqrt(s)
+	s = 0.00001+sum(v)
 	for i in range(len(v)): v[i] /= s
 
 solvedCount, puzzleCount, maxSolvedMove = 0, 0, 0
@@ -276,8 +274,8 @@ while not isQuit:
 		for i in range(len(epv)):
 			v = epv[i]
 			a = epa[i]
-			v[a] += (dest-v[a])*Alpha
-			#Normalize(v)
+			v[a] += (dest-v[a])*Alpha*Gamma**(len(epv)-i-1)
+			Normalize(v)
 			for xx, yy in queue:
 				if xx == epx[i]:
 					queue.remove((xx, yy))

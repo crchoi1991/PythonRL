@@ -144,7 +144,7 @@ gameCount = 0
 def BuildModel():
 	global gameCount
 	model = keras.Sequential([
-		keras.layers.Dense(512, input_dim=InputSize, activation='relu'),
+		keras.layers.Dense(1024, input_dim=InputSize, activation='relu'),
 		keras.layers.Dense(1024, activation='relu'),
 		keras.layers.Dense(512, activation='relu'),
 		keras.layers.Dense(4, activation='sigmoid')
@@ -275,7 +275,7 @@ while not isQuit:
 			v = epv[i]
 			a = epa[i]
 			v[a] += (dest-v[a])*Alpha*Gamma**(len(epv)-i-1)
-			Normalize(v)
+			#Normalize(v)
 			for xx, yy in queue:
 				if xx == epx[i]:
 					queue.remove((xx, yy))

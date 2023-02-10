@@ -21,7 +21,7 @@ Cells = HCells*VCells
 CellSize = 100
 Black, White, Grey = (0, 0, 0), (250, 250, 250), (120, 120, 120)
 InitScores = [1, 1, 1, 0]*10
-MaxMoveCount = (VCells*HCells**2+HCells*VCells**2)//2+10
+MaxMoveCount = (VCells*HCells**2+HCells*VCells**2)//2+20
 PlotRange, PlotInt = 200, 100
 
 # puzzle class
@@ -226,7 +226,7 @@ while not isQuit:
 	gameCount += 1
 	puzzle = Puzzle(gameCount, shuffleCount)
 	moveCount = 0
-	maxMoveCount = min(shuffleCount+10, MaxMoveCount)
+	maxMoveCount = min(shuffleCount+20, MaxMoveCount)
 	epx, epv, epa = [], [], []
 	lastAction = -1
 	while moveCount <= maxMoveCount:

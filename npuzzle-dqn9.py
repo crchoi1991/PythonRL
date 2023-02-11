@@ -20,9 +20,6 @@ Delay = 10
 Cells = HCells*VCells
 CellSize = 100
 Black, White, Grey = (0, 0, 0), (250, 250, 250), (120, 120, 120)
-InitScores = [1, 1, 1, 0]*10
-MaxMoveCount = (VCells*HCells**2+HCells*VCells**2)//2+40
-PlotRange, PlotInt = 200, 100
 
 # puzzle class
 class Puzzle:
@@ -128,6 +125,7 @@ Alpha = 0.9
 Gamma = 0.97
 LSize = 20000
 MiniBatch = 384
+MoveMargin = 50
 Neighbors = ( (-1, -1), (-1, 0), (-1, 1), 
 		(0, -1), (0, 1), 
 		(1, -1), (1, 0), (1, 1),
@@ -138,6 +136,9 @@ Neighbors = ( (-1, -1), (-1, 0), (-1, 1),
 		(-2, -2), (-2, 2), (2, 2), (2, -2),
 		(-3, 0), (0, -3), (3, 0), (0, 3)) 
 InputSize = len(Neighbors)*3 + 4
+InitScores = [1, 1, 1, 0]*10
+MaxMoveCount = (VCells*HCells**2+HCells*VCells**2)//2+MoveMargin
+PlotRange, PlotInt = 200, 100
 
 gameCount = 0
 
@@ -226,7 +227,7 @@ while not isQuit:
 	gameCount += 1
 	puzzle = Puzzle(gameCount, shuffleCount)
 	moveCount = 0
-	maxMoveCount = min(shuffleCount+40, MaxMoveCount)
+	maxMoveCount = min(shuffleCount+MoveMargin, MaxMoveCount)
 	epx, epv, epa = [], [], []
 	lastAction = -1
 	while moveCount <= maxMoveCount:

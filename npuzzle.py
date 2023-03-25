@@ -3,8 +3,9 @@ import pygame
 from pygame.locals import *
 import random
 
+# constants
 Margin = 10
-Actions = ( (0, -1), (-1, 0), (0, 1), (1, 0) )
+Actions = ( (0, -1), (-1, 0), (0, 1), (1, 0) ) # left, up, right, down
 
 HCells, VCells = 4, 4
 Cells = HCells*VCells
@@ -133,18 +134,42 @@ class NPuzzle:
 
 	# get user input
 	def getEvent(self):
+		t = (0, 2, 1, 3)
 		for e in pygame.event.get():
-			if e.type == QUIT: return 1
-			if e.type == KEYUP and e.key == K_ESCAPE: return 1
-			if e.type == KEYUP and e.key == K_x: return 2
-			if e.type == KEYUP and e.key == K_z: return 3
-		return 0
+			if e.type == QUIT: return 1, 0
+			if e.type == KEYUP:
+				if e.key == K_ESCAPE: return 1, 0
+				if K_a <= e.key <= K_z: return 2, chr(e.key-K_a+ord('a'))
+				if K_RIGHT <= e.key <= K_UP: return 3, t[e.key-K_RIGHT]
+			elif e.type == MOUSEBUTTONUP:
+				mx, my = e.pos[0]-Margin, e.pos[1]-Margin
+				cellNum = (my//CellSize)*HCells+mx//CellSize
+				if cellNum < 0 or cellNum >= Cells: continue
+				if self.empty+HCells == cellNum: return 3, 3
+				if self.empty-HCells == cellNum: return 3, 1
+				if self.empty+1 == cellNum: return 3, 2
+				if self.empty-1 == cellNum: return 3, 0
+		return 0, 0
+
+	# wait miliseconds
+	def wait(self, milisec):
+		for _ in range(30): self.draw()
+		pygame.time.wait(milisec-30000//self.fps)
 		
 if __name__ == '__main__':
 	puzzle = NPuzzle()
-	for game in range(5):
+	quit, game = False, 1
+	while True:
 		puzzle.newGame(game, 100)
-		for _ in range(200):
+		while True:
 			ev = puzzle.getEvent()
-			if ev == -1: break
+			if ev == (1, 0):
+				quit = True
+				break
+			if ev[0] == 3:
+				puzzle.action(ev[1])
+				if not puzzle.check(): break
 			puzzle.draw()
+		if quit: break
+		puzzle.wait(5000)
+		game += 1

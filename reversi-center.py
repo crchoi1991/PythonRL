@@ -2,21 +2,16 @@
 import socket
 import select
 import time
-# 수학 관련된 라이브러리 모듈
-import math
-# 파일을 읽고 쓰고, 관리할 목적의 라이브러리
-import os.path
+import math			# 수학 관련된 라이브러리 모듈
+import os.path		# 파일을 읽고 쓰고, 관리할 목적의 라이브러리
 import sys
-# 난수 발생용 라이브러리 모듈
 import random
-# pygame을 위한 라이브러리 모듈
-import pygame
+import pygame		# pygame을 위한 라이브러리 모듈
 from pygame.locals import *
-import copy
 
 # 기본적인 상수들 정의
-FPS = 40			# Frame Per Second (초당 프레임 수)
-SpaceSize = 50	  # 오델로 셀의 공간 크기 50x50 (pixelxpixel)
+FPS = 30			# Frame Per Second (초당 프레임 수)
+SpaceSize = 50		# 오델로 셀의 공간 크기 50x50 (pixelxpixel)
 HalfSpace = SpaceSize//2
 Margin = 10
 WinWidth, WinHeight = SpaceSize*8+Margin+120, SpaceSize*8+Margin+40
@@ -28,13 +23,25 @@ GridColor = (0, 0, 150)
 TextColor = (255, 255, 255)
 HintColor = (100, 255, 100)	 # Light green (밝은 초록색)
 
+# Byte order
+ByteOrder = 'little'
+Encode = 'ascii'
+
+def send(sock, mesg):
+	pl = (len(mesg)).to_bytes(4, ByteOrder)
+	try:
+		sock.send(pl)
+		sock.send(mesg.encode(Encode))
+	except:
+		print(f'send error {mesg}')
+
 # 타일의 중앙값 찾기
 # row = p//8, column = p%8 ==> p = row*8 + column
-def GetCenter(p):
+def getCenter(p):
 	return Margin+(p%8)*SpaceSize+HalfSpace, Margin+(p//8)*SpaceSize+HalfSpace
 
 # 보드 그리기
-def DrawBoard():
+def drawBoard():
 	# 배경을 먼저 그린다.
 	displaySurf.blit(bgImage, bgImage.get_rect())
 
@@ -46,7 +53,7 @@ def DrawBoard():
 
 	# 돌을 그립니다.
 	for i in range(8*8):
-		cx, cy = GetCenter(i)
+		cx, cy = getCenter(i)
 		if board[i] == 1:
 			pygame.draw.circle(displaySurf, White, (cx, cy), HalfSpace-4)
 		elif board[i] == 2:
@@ -55,8 +62,8 @@ def DrawBoard():
 			pygame.draw.rect(displaySurf, HintColor, (cx-4, cy-4, 8, 8))
 	
 # 정보를 표시하기
-def DrawInfo():
-	scores = GetScores()
+def drawInfo():
+	scores = getScores()
 	colors = ( "", "White", "Black" )
 	# 표시할 문자열 만들기
 	str = f"White : {scores[0]:2}  Black : {scores[1]:2}  Turn : {colors[turn]}"
@@ -71,7 +78,7 @@ def DrawInfo():
 		displaySurf.blit(userGameSurf, userGameRect)
 
 # 뒤집을 타일 찾기
-def GetFlipTiles(board, p, t):
+def getFlipTiles(board, p, t):
 	dxy = ((1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1))
 	x, y = p%8, p//8
 	flips = []
@@ -91,21 +98,21 @@ def GetFlipTiles(board, p, t):
 	return flips
 
 # 타일 뒤집기
-def FlipTiles(p):
-	flips = GetFlipTiles(board, p, turn)
+def flipTiles(p):
+	flips = getFlipTiles(board, p, turn)
 	# 타일 뒤집기 애니메이션
 	for rgb in range(0, 255, 90):
 		color = tuple([rgb]*3) if turn == 1 else tuple([255-rgb]*3)
 		for t in flips:
-			cx, cy = GetCenter(t)
+			cx, cy = getCenter(t)
 			pygame.draw.circle(displaySurf, color, (cx, cy), HalfSpace-3)
-		DrawInfo()
+		drawInfo()
 		pygame.display.update()
 		time.sleep(1/FPS)	   # 1/FPS초동안 아무것도 안하고 쉬기
 	for t in flips: board[t] = turn
 
 # 놓을 수 있는 위치 찾기
-def GetHints(board, turn):
+def getHints(board, turn):
 	hintCount = 0
 	for i in range(64):
 		# 현재 돌이 있는 경우는 패스
@@ -116,180 +123,154 @@ def GetHints(board, turn):
 	return hintCount
 
 # 클릭위치값이 주어졌을때, 클릭된 보드의 셀번호 반환
-def GetClickPosition(x, y):
+def getClickPosition(x, y):
 	rx, ry = (x-Margin)//SpaceSize, (y-Margin)//SpaceSize
 	return None if rx < 0 or rx >= 8 or ry < 0 or ry >= 8 else rx+ry*8
 
 # 새로운 보드 만들기
-def NewBoard():
+def newBoard():
 	board = [3]*64
 	board[27], board[28], board[35], board[36] = 1, 2, 2, 1
 	board[20], board[29], board[34], board[43] = 0, 0, 0, 0
 	return board, 4
 
 # 현재 점수 반환
-def GetScores():
+def getScores():
 	wCount, bCount = 0, 0
 	for i in range(64):
 		if board[i] == 1: wCount += 1
 		elif board[i] == 2: bCount += 1
 	return (wCount, bCount)
 
-# 준비가 되었다고 표시
-def SendReady():
+# send ready packet
+def sendReady():
 	if players[turn] == 'user': return
-	mesg = "0068 bd "
-	for i in range(64): mesg += str(board[i])
-	players[turn].send(mesg.encode())
+	mesg = "ready "+"".join(map(str, board))
+	send(players[turn], mesg)
 
-# 미리 실행했을때의 보드 상태를 전달
-def SendPrerun(p):
-	global turn
-	pboard = [ k for k in board ]
-	if pboard[p] != 0: return False
+# send the result of prerun
+def sendPrerun(p):
+	if board[p] != 0: return False
+	pboard = board[:]
 	pboard[p] = turn
 	ft = GetFlipTiles(pboard, p, turn)
 	for t in ft: pboard[t] = turn
 	GetHints(pboard, turn^3)
-	mesg = "0068 pr "
-	for i in range(64): mesg += str(pboard[i])
-	players[turn].send(mesg.encode())
+	mesg = "prerun "+"".join(map(str, pboard))
+	send(players[turn], mesg)
 	return True
 
-# 접속 요청이 왔을 때
-def OnConnect(sock):
+# when client request connect
+def onConnect(sock):
 	cSock, addr = sock.accept()
 	print(f"Connected from {addr}")
-	# 접속인원이 꽉 찼을 때
+	# if already players are full
 	if players[0] == 2:
 		cSock.close()
 		return
 	readSocks.append(cSock)
-	while True:
-		c = random.randrange(1, 3)
-		if players[c] == None: break
+	c = random.choice([k for k in range(1, 3) if players[k] == None])
 	players[c] = cSock
 	players[0] += 1
-	# 두명의 플레이가 완성되면 게임을 시작
-	if players[0] == 2: OnStartGame()
+	# when number of players is 2, start game
+	if players[0] == 2: onStartGame()
 
-# 데이터를 받았을 경우
-def OnRecv(sock):
-	buf = b""	   #  "".encode() 한 것과 같다.
+# when receive
+def onRecv(sock):
+	buf = b""
 	while len(buf) < 4:
-		try:
-			t = sock.recv(4-len(buf))
-			buf += t
-		except:
-			return False
-	# 패킷의 길이를 가져옵니다.
-	length = int(buf.decode())
+		try: buf += sock.recv(4-len(buf))
+		except: return False
+	# get length
+	length = int.from_bytes(buf, ByteOrder)
 	# 실제 데이터를 읽어옵니다.
 	buf = b""
 	while len(buf) < length:
-		try:
-			t = sock.recv(length-len(buf))
-			buf += t
-		except:
-			return False
+		try: buf += sock.recv(length-len(buf))
+		except: return False
 	# 데이터를 분리
 	ss = buf.decode().split()
-	if ss[0] == 'ab': OnAbort()
-	elif ss[0] == 'pt':
-		p = int(ss[1])
-		Place(p)
-	elif ss[0] == 'pr':
-		p = int(ss[1])
-		SendPrerun(p)
+	if ss[0] == 'abort': onAbort()
+	elif ss[0] == 'place': place(int(ss[1]))
+	elif ss[0] == 'prerun': sendPrerun(int(ss[1]))
 	return True
 
 # 돌을 놓기
-def Place(p):
+def place(p):
 	global turn, hintCount
 	if board[p] != 0: return False
 	# p 위치에 돌을 놓기
 	board[p] = turn
 	# 보드를 그리기
-	DrawBoard()
+	drawBoard()
 	# 뒤집힐 타일들을 애니메이션하면서 그리기
-	FlipTiles(p)
+	flipTiles(p)
 	# 턴 바꾸기
 	turn ^= 3
-	hintCount = GetHints(board, turn)
+	hintCount = getHints(board, turn)
 	if hintCount > 0:
-		SendReady()
+		sendReady()
 		return True
 	# 턴 바꾸기
 	turn ^= 3
-	hintCount = GetHints(board, turn)
+	hintCount = getHints(board, turn)
 	if hintCount > 0:
-		SendReady()
+		sendReady()
 		return True
 	# 둘다 놓을 수 없는 경우
-	OnQuitGame()
+	onQuitGame()
 	return False
 
 # 게임 시작하기
-def OnStartGame():
+def onStartGame():
 	global board, hintCount, turn
-	board, hintCount = NewBoard()
+	board, hintCount = newBoard()
 	turn = 1
 	for i in range(1, 3):
-		if players[i] == 'user': continue
-		mesg = f"0008 st 000{i}"
-		players[i].send(mesg.encode())
-	SendReady()
+		if players[i] != 'user': send(players[i], f"start 000{i}")
+	sendReady()
 
 # 게임이 끝난 경우
-def OnQuitGame():
+def onQuitGame():
 	global players
-	w, b = GetScores()
+	w, b = getScores()
 	for i in range(1, 3):
 		if players[i] == 'user': continue
-		mesg = f"0008 qt {w:02}{b:02}"
-		players[i].send(mesg.encode())
+		mesg = f"quit {w:02}{b:02}"
+		send(players[i], mesg)
 		readSocks.remove(players[i])
 	players = [0, None, None]
 
-
-# 게임이 중간에 포기하는 경우
-def OnAbort():
+# when abort this game
+def onAbort():
 	global players
-	w, b = GetScores()
-	mesg = f"0004 ab "
+	w, b = getScores()
+	mesg = f"abort"
 	for i in range(1, 3):
-		if players[i] == 'user': continue
-		try:
-			players[i].send(mesg.encode())
-		except:
-			print("send error")
+		if players[i] != 'user': send(players[i], "abort")
 		if players[i] in readSocks: readSocks.remove(players[i])
 	players = [ 0, None, None ]
 	
-# 사용자가 게임에 참여하는 경우
-def OnUserGame():
+# when user is in this game
+def onUserGame():
 	# 사용자가 게임에 참여할 수 없는 경우
-	if players[0] == 2 or players[1] == 'user' or players[2] == 'user': return
-	while True:
-		c = random.randrange(1, 3)
-		if players[c] == None: break
+	if players[0] == 2 or 'user' in players: return
+	c = random.choice([k for k in range(1, 3) if players[k] == None])
 	players[c] = 'user'
 	players[0] += 1
-	if players[0] == 2: OnStartGame()
+	if players[0] == 2: onStartGame()
 
-# 사용자가 마우스를 돌을 놓을 위치를 지정한 경우
-def OnUser(x, y):
-	p = GetClickPosition(x, y)
-	print(f"OnUser({x}, {y}) = {p}")
-	# 해당 위치가 셀이 아니거나, 해당 위치의 셀이 힌트 셀이 아닌 경우
+# when user place a stone
+def onUser(x, y):
+	p = getClickPosition(x, y)
+	print(f"onUser({x}, {y}) = {p}")
 	if p == None or board[p] != 0: return
-	Place(p)
+	place(p)
 
-
-# 네트워크가 쉬는 기간동안 처리하는 일들
-def OnIdle():
-	DrawBoard()
-	DrawInfo()
+# when idle
+def onIdle():
+	drawBoard()
+	drawInfo()
 	pygame.display.update()	 # display 업데이트
 	# 이벤트 처리 (PyGame에서 마우스, 키보드 또는 윈도우의 버튼들)
 	for event in pygame.event.get():
@@ -297,8 +278,8 @@ def OnIdle():
 			return False
 		elif event.type == MOUSEBUTTONUP:
 			mx, my = event.pos
-			if userGameRect.collidepoint((mx, my)): OnUserGame()
-			elif players[turn] == 'user': OnUser(mx, my)
+			if userGameRect.collidepoint((mx, my)): onUserGame()
+			elif players[turn] == 'user': onUser(mx, my)
 	return True
 
 # 리슨 소켓 만들기
@@ -334,7 +315,7 @@ userGameRect = userGameSurf.get_rect()
 userGameRect.topright = (WinWidth-8, Margin)
 
 # 보드 생성
-board, hintCount = NewBoard()
+board, hintCount = newBoard()
 players = [ 0, None, None ]
 turn = 1
 
@@ -342,9 +323,9 @@ turn = 1
 while True:
 	reads, _, _ = select.select(readSocks, [], [], 1/FPS)
 	for s in reads:
-		if s == listenSock: OnConnect(s)
-		elif not OnRecv(s): OnAbort()
-	if not OnIdle(): break
+		if s == listenSock: onConnect(s)
+		elif not onRecv(s): onAbort()
+	if not onIdle(): break
 
 # quit pygame
 pygame.quit()

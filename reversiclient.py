@@ -8,21 +8,17 @@ ByteOrder='little'
 
 class ReversiClient:
 	Commands = { 
-		'prerun' : 'onPreRun',
 		'start' : 'onStart', 
 		'quit' : 'onQuit', 
-		'abort' : 'onAbort'
+		'abort' : 'onAbort',
 	}
 	def __init__(self):
-		self.queue = Queue()
-		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.buf = b''
 		self.needed = 0
 
-	def __del__(self):
-		self.sock.close()
-
 	def connect(self, hostname, port=8791):
+		self.queue = Queue()
+		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		for _ in range(10):
 			try:
 				self.sock.connect((hostname, port))
@@ -40,7 +36,7 @@ class ReversiClient:
 
 	def getEvent(self):
 		self.recv()
-		if self.queue.empty(): return None
+		if self.queue.empty(): return None, []
 		return self.queue.get()
 
 	def recv(self):
@@ -67,7 +63,7 @@ class ReversiClient:
 			cmd, *args = self.buf.decode("ascii").split()
 			self.buf = b''
 			if cmd not in ReversiClient.Commands:
-				self.queue.put((ReversiClient.ErrorCommand, ['unknown command']))
+				self.queue.put((cmd, args))
 				return
 			getattr(self, ReversiClient.Commands[cmd])(*args)
 
@@ -79,39 +75,35 @@ class ReversiClient:
 		except:
 			queue.put(('ErrorSocket', ['send']))
 
-	def preRun(self, place):
-		self.send(f"prerun {place}")
+	def action(self, place):
+		self.send(f"place {place}")
 
 	def onStart(self, buf):
 		self.turn = int(buf)
-		self.queue.put(('Start', [self.turn]))
+		self.queue.put(('start', [self.turn]))
 
 	def onQuit(self, buf):
-		self.gameCount += 1
 		w, b = int(buf[:2]), int(buf[2:])
 		win = (w > b) - (w < b)
 		result = win+1 if self.turn == 1 else 1-win
-		winText = ("Lose", "Draw", "Win")
-		print(f"{winText[result]} W : {w}, B : {b}")
-		return result
-
-	def onBoard(self, buf):
-		st, v, nst, nv, p = self.action(buf)
-		if p < 0: return False
-		self.send("%04d pt %4d"%(8, p))
-		self.episode.append((st, v, nst, nv))
-		return True
-
-	def onPreRun(self, args):
-		self.queue.put(('prerun', args))
+		self.queue.put(('quit', [w, b, result]))
 
 if __name__ == "__main__":
 	game = ReversiClient()
 	while True:
 		if not game.connect('localhost'): break
 		while True:
-			ev = game.getEvent()
-			if ev == None: continue
-			print(ev)
-			if ev[0].startswith('Error'): break
-			if ev[0] == 'Start': print('Start a new game')
+			cmd, args = game.getEvent()
+			if cmd == None: continue
+			if cmd.startswith('Error'): break
+			if cmd == 'start': turn = args[0]
+			elif cmd == 'ready':
+				hints = [k for k in range(64) if args[0][k] == '0']
+				game.action(random.choice(hints))
+			elif cmd == 'quit':
+				print(*args)
+				break
+			else:
+				print(f'Unknown command {cmd}')
+				break
+		game.close()

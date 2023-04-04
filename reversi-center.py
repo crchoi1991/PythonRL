@@ -117,7 +117,7 @@ def getHints(board, turn):
 	for i in range(64):
 		# 현재 돌이 있는 경우는 패스
 		if board[i] == 1 or board[i] == 2: continue
-		ft = GetFlipTiles(board, i, turn)
+		ft = getFlipTiles(board, i, turn)
 		board[i] = 0 if len(ft) > 0 else 3
 		hintCount += 1 if board[i] == 0 else 0
 	return hintCount

@@ -179,15 +179,19 @@ def onConnect(sock):
 def onRecv(sock):
 	buf = b""
 	while len(buf) < 4:
-		try: buf += sock.recv(4-len(buf))
+		try: t = sock.recv(4-len(buf))
 		except: return False
+		if not len(t): return False
+		buf += t
 	# get length
 	length = int.from_bytes(buf, ByteOrder)
 	# 실제 데이터를 읽어옵니다.
 	buf = b""
 	while len(buf) < length:
-		try: buf += sock.recv(length-len(buf))
+		try: t = sock.recv(length-len(buf))
 		except: return False
+		if not len(t): return False
+		buf += t
 	# 데이터를 분리
 	ss = buf.decode().split()
 	if ss[0] == 'abort': onAbort()
@@ -227,7 +231,7 @@ def onStartGame():
 	board, hintCount = newBoard()
 	turn = 1
 	for i in range(1, 3):
-		if players[i] != 'user': send(players[i], f"start 000{i}")
+		if players[i] != 'user': send(players[i], f"start {i}")
 	sendReady()
 
 # 게임이 끝난 경우
@@ -244,7 +248,7 @@ def onQuitGame():
 # when abort this game
 def onAbort():
 	global players
-	w, b = getScores()
+	print('Abort game')
 	mesg = f"abort"
 	for i in range(1, 3):
 		if players[i] != 'user': send(players[i], "abort")
@@ -283,10 +287,9 @@ def onIdle():
 	return True
 
 # 리슨 소켓 만들기
-listenSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+listenSock = socket.create_server(('', 8791))
 listenSock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-listenSock.bind( ('', 8791) )
-listenSock.listen(5)
+listenSock.listen()
 readSocks = [ listenSock ]
 
 # pygame 초기화
@@ -330,3 +333,4 @@ while True:
 # quit pygame
 pygame.quit()
 
+listenSock.close()

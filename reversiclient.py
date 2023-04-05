@@ -10,7 +10,7 @@ class ReversiClient:
 	Commands = { 
 		'start' : 'onStart', 
 		'quit' : 'onQuit', 
-		'abort' : 'onAbort',
+		'ready' : 'onReady'
 	}
 	def __init__(self):
 		self.buf = b''
@@ -19,6 +19,7 @@ class ReversiClient:
 	def connect(self, hostname, port=8791):
 		self.queue = Queue()
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.sock.settimeout(2)
 		for _ in range(10):
 			try:
 				self.sock.connect((hostname, port))
@@ -43,8 +44,12 @@ class ReversiClient:
 		# read packet header
 		if self.needed == 0:
 			try: t = self.sock.recv(4-len(self.buf))
+			except socket.timeout: return
 			except:
 				self.queue.put(('ErrorSocket', ['recv header']))
+				return
+			if not len(t):
+				self.queue.put(('ErrorSocket', ['peer connection closed']))
 				return
 			self.buf += t
 			if len(self.buf) < 4: return
@@ -54,8 +59,12 @@ class ReversiClient:
 		# read packet data those length is needed
 		if len(self.buf) < self.needed:
 			try: t = self.sock.recv(self.needed-len(self.buf))
+			except socket.Timeouterror: return
 			except:
-				queue.put((ReversiClient.ErrorSocket, ['recv message']))
+				self.queue.put((ReversiClient.ErrorSocket, ['recv message']))
+				return
+			if not len(t):
+				self.queue.put(('ErrorSocket', ['peer connection closed']))
 				return
 			self.buf += t
 			if len(self.buf) < self.needed: return
@@ -73,20 +82,63 @@ class ReversiClient:
 			self.sock.send(pl)
 			self.sock.send(mesg.encode("ascii"))
 		except:
-			queue.put(('ErrorSocket', ['send']))
+			self.queue.put(('ErrorSocket', ['send']))
 
-	def action(self, place):
+	def place(self, place):
 		self.send(f"place {place}")
 
-	def onStart(self, buf):
-		self.turn = int(buf)
-		self.queue.put(('start', [self.turn]))
+	def prerun(board, place, turn):
+		if board[place] != 0: return -1
+		pboard = board[:]
+		pboard[place] = turn
+		ft = ReversiClient.getFlipTiles(pboard, place, turn)
+		for t in ft: pboard[t] = turn
+		ReversiClient.findHints(pboard, turn^3)
+		return pboard
+
+	def onStart(self, tturn):
+		self.turn = int(tturn)
+		self.queue.put(('start', [ self.turn ]))
+
+	def onReady(self, tboard):
+		self.queue.put(('ready', [ list(map(int, tboard)) ]))
 
 	def onQuit(self, buf):
 		w, b = int(buf[:2]), int(buf[2:])
 		win = (w > b) - (w < b)
 		result = win+1 if self.turn == 1 else 1-win
 		self.queue.put(('quit', [w, b, result]))
+
+	def getFlipTiles(board, place, turn):
+		dxy = ((1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1))
+		x, y, antiturn = place%8, place//8, turn^3
+		flips = []
+		for dx, dy in dxy:
+			isFlip = False
+			tf = []
+			nx, ny = x+dx, y+dy
+			while nx >= 0 and nx < 8 and ny >= 0 and ny < 8:
+				np = nx+ny*8
+				if board[np] == turn:
+					isFlip = True
+					break
+				if board[np] != antiturn: break
+				tf.append(np)
+				nx, ny = nx+dx, ny+dy
+			if isFlip: flips += tf
+		return flips
+
+	def findHints(board, turn):
+		hintCount = 0
+		for i in range(64):
+			if board[i] == 1 or board[i] == 2: continue
+			ft = ReversiClient.getFlipTiles(board, i, turn)
+			board[i] = 0 if len(ft) > 0 else 3
+			hintCount += 1 if board[i] == 0 else 0
+		return hintCount
+
+	def getHints(board):
+		return [ k for k in range(64) if board[k] == 0 ]
 
 if __name__ == "__main__":
 	game = ReversiClient()
@@ -95,12 +147,17 @@ if __name__ == "__main__":
 		while True:
 			cmd, args = game.getEvent()
 			if cmd == None: continue
-			if cmd.startswith('Error'): break
+			if cmd.startswith('Error'):
+				print(cmd, args)
+				break
 			if cmd == 'start': turn = args[0]
 			elif cmd == 'ready':
-				hints = [k for k in range(64) if args[0][k] == '0']
-				game.action(random.choice(hints))
+				hints = ReversiClient.getHints(args[0])
+				game.place(random.choice(hints))
 			elif cmd == 'quit':
+				print(*args)
+				break
+			elif cmd == 'abort':
 				print(*args)
 				break
 			else:

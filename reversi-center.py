@@ -143,6 +143,12 @@ def getScores():
 	return (wCount, bCount)
 
 # send ready packet
+def sendPlace(board, place, turn):
+	mesg = "place "+"".join(map(str, board))+f" {place} {turn}"
+	for i in range(1, 3):
+		if players[i] != 'user': send(players[i], mesg)
+
+# send ready packet
 def sendReady():
 	if players[turn] == 'user': return
 	mesg = "ready "+"".join(map(str, board))
@@ -209,6 +215,8 @@ def place(p):
 	drawBoard()
 	# 뒤집힐 타일들을 애니메이션하면서 그리기
 	flipTiles(p)
+	# send current place
+	sendPlace(board, p, turn)
 	# 턴 바꾸기
 	turn ^= 3
 	hintCount = getHints(board, turn)

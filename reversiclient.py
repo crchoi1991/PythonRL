@@ -160,6 +160,8 @@ if __name__ == "__main__":
 			elif cmd == 'abort':
 				print(*args)
 				break
+			elif cmd == 'place':
+				print(*args)
 			else:
 				print(f'Unknown command {cmd}')
 				break

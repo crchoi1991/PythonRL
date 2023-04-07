@@ -89,12 +89,11 @@ class ReversiClient:
 		self.send(f"place {place}")
 
 	def prerun(board, place, turn):
-		pboard = board[:]
-		if place != -1: pboard[place] = turn
-		ft = ReversiClient.getFlipTiles(pboard, place, turn)
-		for t in ft: pboard[t] = turn
-		ReversiClient.findHints(pboard, turn^3)
-		return pboard
+		if place != -1:
+			board[place] = turn
+			ft = ReversiClient.getFlipTiles(board, place, turn)
+			for t in ft: board[t] = turn
+		ReversiClient.findHints(board, turn^3)
 
 	def onStart(self, tturn, tboard):
 		self.turn = int(tturn)

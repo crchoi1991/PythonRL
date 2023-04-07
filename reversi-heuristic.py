@@ -48,8 +48,9 @@ def getNextMove(model, board, turn):
 	# Select maximum value's place
 	maxp, maxnst, maxv = -1, None, -100
 	for h in hints:
-		ret = ReversiClient.prerun(board, h, turn)
-		nst = getStatus(ret, turn)
+		tboard = board[:]
+		ReversiClient.prerun(tboard, h, turn)
+		nst = getStatus(tboard, turn)
 		v = model.predict(nst.reshape(1, 64), verbose=0)[0, 0]
 		if v > maxv: maxp, maxnst, maxv = h, nst, v
 	return maxp, maxnst

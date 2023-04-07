@@ -4,8 +4,8 @@ import time
 import math
 from reversiclient import ReversiClient
 
-SimulationCount = 49
-SelectCount = 14
+SimulationCount = 31
+SelectCount = 13
 class TreeNode:
 	def __init__(self, parent, board, place, turn):
 		self.board = board
@@ -27,11 +27,11 @@ class TreeNode:
 		hints = self.hints
 		while True:
 			place = -1 if len(hints) == 0 else random.choice(hints)
-			board = ReversiClient.prerun(board, place, turn)
+			ReversiClient.prerun(board, place, turn)
 			hints = ReversiClient.getHints(board)
 			turn ^= 3
 			if len(hints) == 0:
-				board = ReversiClient.prerun(board, -1, turn)
+				ReversiClient.prerun(board, -1, turn)
 				hints = ReversiClient.getHints(board)
 				turn ^= 3
 			if len(hints) == 0:
@@ -60,7 +60,8 @@ class MCTree:
 			node = TreeNode(root, root.board, -1, root.turn^3)
 		else:
 			place = root.hints.pop()
-			board = ReversiClient.prerun(root.board, place, root.turn)
+			board = root.board[:]
+			ReversiClient.prerun(board, place, root.turn)
 			node = TreeNode(root, board, place, root.turn^3)
 		# simultion
 		win = 0

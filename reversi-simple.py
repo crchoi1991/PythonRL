@@ -40,8 +40,9 @@ def getNextMove(model, board, turn):
 	# Select maximum value's place
 	maxp, maxnst, maxv = -1, None, -100
 	for h in hints:
-		ret = ReversiClient.prerun(board, h, turn)
-		nst = getStatus(ret, turn)
+		tboard = board[:]
+		ReversiClient.prerun(tboard, h, turn)
+		nst = getStatus(tboard, turn)
 		v = model.predict(nst.reshape(1, 64), verbose=0)[0, 0]
 		if v > maxv: maxp, maxnst, maxv = h, nst, v
 	return maxp, maxnst
@@ -61,7 +62,7 @@ while True:
 			print(cmd, args)
 			break
 		if cmd == 'start':
-			turn = args[0]
+			turn = args[1]
 			print(f'start a new game {gameCount+1} with color {Colors[turn]}')
 		elif cmd == 'ready':
 			place, _ = getNextMove(model, args[0], turn)

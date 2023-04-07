@@ -10,7 +10,8 @@ class ReversiClient:
 	Commands = { 
 		'start' : 'onStart', 
 		'quit' : 'onQuit', 
-		'ready' : 'onReady'
+		'ready' : 'onReady',
+		'place' : 'onPlace',
 	}
 	def __init__(self):
 		self.buf = b''
@@ -88,20 +89,22 @@ class ReversiClient:
 		self.send(f"place {place}")
 
 	def prerun(board, place, turn):
-		if board[place] != 0: return -1
 		pboard = board[:]
-		pboard[place] = turn
+		if place != -1: pboard[place] = turn
 		ft = ReversiClient.getFlipTiles(pboard, place, turn)
 		for t in ft: pboard[t] = turn
 		ReversiClient.findHints(pboard, turn^3)
 		return pboard
 
-	def onStart(self, tturn):
+	def onStart(self, tturn, tboard):
 		self.turn = int(tturn)
-		self.queue.put(('start', [ self.turn ]))
+		self.queue.put(('start', [ list(map(int, tboard)), self.turn ]))
 
 	def onReady(self, tboard):
-		self.queue.put(('ready', [ list(map(int, tboard)) ]))
+		self.queue.put(('ready', [ list(map(int, tboard)), self.turn ]))
+
+	def onPlace(self, tboard, tplace, tturn):
+		self.queue.put(('place', [ list(map(int, tboard)), int(tplace), int(tturn) ]))
 
 	def onQuit(self, buf):
 		w, b = int(buf[:2]), int(buf[2:])
@@ -140,6 +143,13 @@ class ReversiClient:
 	def getHints(board):
 		return [ k for k in range(64) if board[k] == 0 ]
 
+	def getScores(board):
+		w, b = 0, 0
+		for c in board:
+			if c == 1: w += 1
+			if c == 2: b += 1
+		return w, b
+
 if __name__ == "__main__":
 	game = ReversiClient()
 	while True:
@@ -150,7 +160,7 @@ if __name__ == "__main__":
 			if cmd.startswith('Error'):
 				print(cmd, args)
 				break
-			if cmd == 'start': turn = args[0]
+			if cmd == 'start': turn = args[1]
 			elif cmd == 'ready':
 				hints = ReversiClient.getHints(args[0])
 				game.place(random.choice(hints))

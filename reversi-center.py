@@ -60,6 +60,10 @@ def drawBoard():
 			pygame.draw.circle(displaySurf, Black, (cx, cy), HalfSpace-3)
 		elif board[i] == 0:
 			pygame.draw.rect(displaySurf, HintColor, (cx-4, cy-4, 8, 8))
+			numSurf = normalFont.render(f'{i}', True, TextColor)
+			numRect = numSurf.get_rect()
+			numRect.bottomleft = (cx-8, cy+8)
+			displaySurf.blit(numSurf, numRect)
 	
 # 정보를 표시하기
 def drawInfo():
@@ -215,11 +219,11 @@ def place(p):
 	drawBoard()
 	# 뒤집힐 타일들을 애니메이션하면서 그리기
 	flipTiles(p)
-	# send current place
-	sendPlace(board, p, turn)
 	# 턴 바꾸기
 	turn ^= 3
 	hintCount = getHints(board, turn)
+	# send result of place
+	sendPlace(board, p, turn^3)
 	if hintCount > 0:
 		sendReady()
 		return True
@@ -237,9 +241,10 @@ def place(p):
 def onStartGame():
 	global board, hintCount, turn
 	board, hintCount = newBoard()
+	tboard = "".join(map(str, board))
 	turn = 1
 	for i in range(1, 3):
-		if players[i] != 'user': send(players[i], f"start {i}")
+		if players[i] != 'user': send(players[i], f"start {i} {tboard}")
 	sendReady()
 
 # 게임이 끝난 경우

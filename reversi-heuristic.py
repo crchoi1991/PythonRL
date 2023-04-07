@@ -69,7 +69,7 @@ while True:
 			print(cmd, args)
 			break
 		if cmd == 'start':
-			turn = args[0]
+			turn = args[1]
 			print(f'start a new game {gameCount+1} with color {Colors[turn]}')
 		elif cmd == 'ready':
 			place, _ = getNextMove(model, args[0], turn)

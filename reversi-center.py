@@ -64,6 +64,8 @@ def drawBoard():
 			numRect = numSurf.get_rect()
 			numRect.bottomleft = (cx-8, cy+8)
 			displaySurf.blit(numSurf, numRect)
+		if i == lastMove:
+			pygame.draw.rect(displaySurf, HintColor, (cx-4, cy-4, 8, 8))
 	
 # 정보를 표시하기
 def drawInfo():
@@ -133,9 +135,11 @@ def getClickPosition(x, y):
 
 # 새로운 보드 만들기
 def newBoard():
+	global lastMove
 	board = [3]*64
 	board[27], board[28], board[35], board[36] = 1, 2, 2, 1
 	board[20], board[29], board[34], board[43] = 0, 0, 0, 0
+	lastMove = -1
 	return board, 4
 
 # 현재 점수 반환
@@ -211,11 +215,12 @@ def onRecv(sock):
 
 # 돌을 놓기
 def place(p):
-	global turn, hintCount
+	global turn, hintCount, lastMove
 	if board[p] != 0: return False
 	# p 위치에 돌을 놓기
 	board[p] = turn
 	# 보드를 그리기
+	lastMove = p
 	drawBoard()
 	# 뒤집힐 타일들을 애니메이션하면서 그리기
 	flipTiles(p)
@@ -230,6 +235,8 @@ def place(p):
 	# 턴 바꾸기
 	turn ^= 3
 	hintCount = getHints(board, turn)
+	# send result of place
+	sendPlace(board, -1, turn^3)
 	if hintCount > 0:
 		sendReady()
 		return True
@@ -334,6 +341,7 @@ userGameRect.topright = (WinWidth-8, Margin)
 board, hintCount = newBoard()
 players = [ 0, None, None ]
 turn = 1
+lastMove = -1
 
 # 게임 실행하는 메인 모듈
 while True:

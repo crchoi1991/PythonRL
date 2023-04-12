@@ -4,8 +4,8 @@ import time
 import math
 from reversiclient import ReversiClient
 
-SimulationCount = 31
-SelectCount = 13
+SimulationCount = 11
+SelectCount = 37
 class TreeNode:
 	def __init__(self, parent, board, place, turn):
 		self.board = board
@@ -19,7 +19,7 @@ class TreeNode:
 		if parent: parent.children.append(self)
 
 	def __str__(self):
-		return f'place={self.place} turn={self.turn} w/v={self.win}/{self.visit} childs={len(self.children)}'
+		return f'place={self.place} turn={self.turn} w/v={self.win}/{self.visit} childs={len(self.children)} hints={self.hints}'
 	
 	def simulate(self):
 		board = self.board[:]
@@ -44,9 +44,8 @@ class MCTree:
 
 	def select(self, root=None):
 		if root==None: root = self.root
-		# if this node is terminal, pass
-		if root.place == -1 and root.parent != None and root.parent.place == -1: return
 		# select
+		if root.place == -1 and root.parent != None and root.parent.place == -1: return
 		if len(root.hints) == 0 and len(root.children) != 0:
 			maxchild, maxv = None, 0
 			for child in root.children:
@@ -56,13 +55,10 @@ class MCTree:
 			self.select(child)
 			return
 		# expand
-		if len(root.hints) == 0:
-			node = TreeNode(root, root.board, -1, root.turn^3)
-		else:
-			place = root.hints.pop()
-			board = root.board[:]
-			ReversiClient.prerun(board, place, root.turn)
-			node = TreeNode(root, board, place, root.turn^3)
+		place = -1 if len(root.hints) == 0 else root.hints.pop()
+		board = root.board[:]
+		ReversiClient.prerun(board, place, root.turn)
+		node = TreeNode(root, board, place, root.turn^3)
 		# simultion
 		win = 0
 		for _ in range(SimulationCount):
@@ -87,12 +83,6 @@ class MCTree:
 		if len(self.root.children) == 0:
 			self.root = TreeNode(None, board, place, turn^3)
 			return
-		# skip when no place
-		if self.root.children[0].place == -1:
-			tmp = self.root
-			self.root = child
-			child.parent = None
-			del(tmp)
 		# find placed child and set the child as a root
 		for child in self.root.children:
 			if child.place == place:
@@ -101,6 +91,16 @@ class MCTree:
 				child.parent = None
 				del(tmp)
 				return
+		# not found
+		self.root = TreeNode(None, board, place, turn^3)
+
+	def print(self):
+		MCTree.printTree(self.root, 0)
+
+	def printTree(root, space):
+		print(f"{' '*space}-{root}")
+		for child in root.children:
+			MCTree.printTree(child, space+4)
 		
 Colors = ('', 'White', 'Black')
 WinText = ('Lose', 'Draw', 'Win')
@@ -117,12 +117,15 @@ while True:
 			break
 		if cmd == 'start':
 			turn = args[1]
+			mcts = MCTree(args[0], 1)
+			for _ in range(SelectCount): mcts.select()
 			print(f'start a new game {gameCount+1} with color {Colors[turn]}')
 		elif cmd == 'ready':
-			mcts = MCTree(args[0], args[1])
 			for _ in range(SelectCount): mcts.select()
 			place = mcts.getMaxChild()
 			game.place(place)
+		elif cmd == 'place':
+			mcts.place(args[0], args[1], args[2])
 		elif cmd == 'quit':
 			gameCount += 1
 			win[args[2]] += 1

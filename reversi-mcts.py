@@ -4,8 +4,8 @@ import time
 import math
 from reversiclient import ReversiClient
 
-SimulationCount = 11
-SelectCount = 37
+SimulationCount = 23
+TimeLimit = 1.7
 class TreeNode:
 	def __init__(self, parent, board, place, turn):
 		self.board = board
@@ -118,10 +118,10 @@ while True:
 		if cmd == 'start':
 			turn = args[1]
 			mcts = MCTree(args[0], 1)
-			for _ in range(SelectCount): mcts.select()
 			print(f'start a new game {gameCount+1} with color {Colors[turn]}')
 		elif cmd == 'ready':
-			for _ in range(SelectCount): mcts.select()
+			timeLimit = time.time()+TimeLimit
+			while time.time() < timeLimit: mcts.select()
 			place = mcts.getMaxChild()
 			game.place(place)
 		elif cmd == 'place':
